@@ -38,6 +38,8 @@ fn calculate_contract_address(salt: Felt, class_hash: Felt, constructor_calldata
 
 pub async fn get_latest_pair_data() {
 
+    // TODO: read all hard coded strings from config
+    // TODO: get data using mpsc channels
     let provider = JsonRpcClient::new(
         HttpTransport::new(
             Url::parse("https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa").unwrap()));

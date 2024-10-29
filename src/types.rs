@@ -1,5 +1,6 @@
 use utoipa::{ToSchema, IntoParams};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
 pub struct Quote {
@@ -14,4 +15,9 @@ pub struct Quote {
 
     #[schema(example = "2106900000", nullable = true,)]
     buyAmount: Option<String>
+}
+
+#[derive(Debug)]
+pub struct Graph {
+    pub edges: HashMap<String, Vec<String>>,
 }
