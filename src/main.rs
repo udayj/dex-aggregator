@@ -1,14 +1,14 @@
 use axum::{
+    extract::Query,
     routing::{get, post},
     Json, Router,
-    extract::Query,
 };
-use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
-use utoipa::{OpenApi, ToSchema, IntoParams};
-use utoipa_swagger_ui::SwaggerUi;
 use dex_aggregator::quotes::get_aggregator_quotes;
 use dex_aggregator::types::Quote;
+use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
+use utoipa::{IntoParams, OpenApi, ToSchema};
+use utoipa_swagger_ui::SwaggerUi;
 
 // Define our API models
 
@@ -27,7 +27,6 @@ use dex_aggregator::types::Quote;
 )]
 struct ApiDoc;
 
-
 // API handlers
 #[utoipa::path(
     get,
@@ -44,11 +43,9 @@ struct ApiDoc;
     tag = "quotes"
 )]
 async fn get_quotes(Query(params): Query<Quote>) -> Json<Quote> {
-
     get_aggregator_quotes(params.clone()).await;
     Json(params)
 }
-
 
 #[tokio::main]
 async fn main() {
@@ -64,7 +61,7 @@ async fn main() {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Server running on http://localhost:3000");
     println!("Swagger UI available at http://localhost:3000/swagger-ui/");
-    
+
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
         .unwrap();
@@ -72,7 +69,7 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 
     /*axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();*/
+    .serve(app.into_make_service())
+    .await
+    .unwrap();*/
 }
