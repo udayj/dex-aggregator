@@ -1,9 +1,13 @@
 use super::token_graph::compute_graph_from_csv;
-use super::types::{Graph, TokenPath, PathMap, TradePath};
+use super::types::{Graph, TokenPath, PathMap, TradePath, Pool};
 use std::path::Path;
 use std::fs::File;
 use std::io::{self, BufReader, BufRead, Write};
 use std::collections::{HashMap, HashSet};
+use std::ops::Mul;
+use std::str::FromStr;
+use num_bigint::BigUint;
+use num_traits::{CheckedSub, ConstZero, One, Zero};
 
 pub fn store_path_data_on_disk<P: AsRef<Path>>(path: P) {
 
@@ -131,4 +135,127 @@ pub fn get_paths_between(token_in: String, token_out: String) -> Vec<TradePath> 
 
     required_trade_paths
 
+}
+
+impl TradePath {
+    fn new(path_str: &str) -> Self {
+        TradePath {
+            tokens: path_str.split_whitespace().map(String::from).collect(),
+        }
+    }
+
+    pub fn get_amount_out(&self, amount_in: &BigUint, pools: &mut HashMap<(String, String), Pool>) -> BigUint {
+        let mut current_amount = amount_in.clone();
+
+        // Process each hop in the path
+        for token_pair in self.tokens.windows(2) {
+            let token_in = &token_pair[0];
+            let token_out = &token_pair[1];
+
+            // Create pool key (always order tokens lexicographically)
+            let pool_key = if BigUint::parse_bytes(&token_in.as_str()[2..].as_bytes(), 16).unwrap() < BigUint::parse_bytes(&token_out.as_str()[2..].as_bytes(), 16).unwrap() {
+                (token_in.clone(), token_out.clone())
+            } else {
+                (token_out.clone(), token_in.clone())
+            };
+
+            // Get pool and calculate output
+            if let Some(pool) = pools.get(&pool_key) {
+                if *token_in.clone() == pool_key.0 {
+                    let current_amount_in = current_amount.clone();
+                    current_amount = pool.get_amount_out(&current_amount, &pool.reserve0.clone(), &pool.reserve1.clone());
+                    let updated_pool = Pool {
+                    reserve0: pool.reserve0.clone() + current_amount_in,
+                    reserve1: pool.reserve1.clone() - current_amount.clone(),
+                    reserves_updated: true,
+                    address: pool.address.clone(),
+                    fee: pool.fee.clone()
+                };
+                if current_amount.clone() == BigUint::zero() {
+                    return BigUint::zero();
+                }
+                pools.insert(pool_key, updated_pool);
+                } else {
+                  let current_amount_in = current_amount.clone();
+                    current_amount = pool.get_amount_out(&current_amount, &pool.reserve1.clone(), &pool.reserve0.clone());
+                    let updated_pool = Pool {
+                    reserve0: pool.reserve0.clone() - current_amount.clone(),
+                    reserve1: pool.reserve1.clone() + current_amount_in,
+                    reserves_updated: true,
+                    address: pool.address.clone(),
+                    fee: pool.fee.clone() 
+                };
+                if current_amount.clone() == BigUint::zero() {
+                    return BigUint::zero();
+                }
+                pools.insert(pool_key, updated_pool);
+                
+            }
+        }
+            else {
+                return BigUint::zero(); // Pool not found
+            }
+        }
+
+        current_amount
+    }
+
+    pub fn get_amount_in(&self, amount_out: &BigUint, pools: &mut HashMap<(String, String), Pool>) -> BigUint {
+        let mut current_amount = amount_out.clone();
+        let tokens:Vec<String> = self.tokens.clone().into_iter().rev().collect();
+        // Process each hop in the path
+        for token_pair in tokens.windows(2) {
+            let token_out = &token_pair[0];
+            let token_in = &token_pair[1];
+
+            // Create pool key (always order tokens lexicographically)
+            let pool_key = if BigUint::parse_bytes(&token_in.as_str()[2..].as_bytes(), 16).unwrap() < BigUint::parse_bytes(&token_out.as_str()[2..].as_bytes(), 16).unwrap() {
+                (token_in.clone(), token_out.clone())
+            } else {
+                (token_out.clone(), token_in.clone())
+            };
+            
+            // Get pool and calculate output
+            if let Some(pool) = pools.get(&pool_key) {
+                if *token_in.clone() == pool_key.0 {
+                    let current_amount_out = current_amount.clone();
+                    current_amount = pool.get_amount_in(&current_amount, &pool.reserve0.clone(), &pool.reserve1.clone());
+                    if current_amount.clone() == BigUint::from_str("1000000000000000000000000000").unwrap() {
+                    return BigUint::from_str("1000000000000000000000000000").unwrap();
+                }
+                    let updated_pool = Pool {
+                    reserve0: pool.reserve0.clone() + current_amount.clone(),
+                    reserve1: BigUint::checked_sub(&pool.reserve1.clone(), &current_amount_out.clone()).unwrap_or(BigUint::ZERO),
+                    reserves_updated: true,
+                    address: pool.address.clone(),
+                    fee: pool.fee.clone()
+                };
+                
+                pools.insert(pool_key, updated_pool);
+                } else {
+                  let current_amount_out = current_amount.clone();
+                    current_amount = pool.get_amount_in(&current_amount, &pool.reserve1.clone(), &pool.reserve0.clone());
+
+                    if current_amount.clone() == BigUint::from_str("1000000000000000000000000000").unwrap() {
+                    return BigUint::from_str("1000000000000000000000000000").unwrap();
+                }
+                    let updated_pool = Pool {
+                    reserve0: BigUint::checked_sub(&pool.reserve0.clone(), &current_amount_out.clone()).unwrap_or(BigUint::ZERO),
+                    reserve1: pool.reserve1.clone() + current_amount.clone(),
+                    reserves_updated: true,
+                    address: pool.address.clone(),
+                    fee: pool.fee.clone() 
+                };
+                
+                pools.insert(pool_key, updated_pool);
+                
+            }
+        }
+            else {
+                return BigUint::zero(); // Pool not found
+            }
+        }
+
+        current_amount
+    }
 }
