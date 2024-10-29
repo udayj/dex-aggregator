@@ -7,22 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use utoipa::{OpenApi, ToSchema, IntoParams};
 use utoipa_swagger_ui::SwaggerUi;
+use dex_aggregator::quotes::get_aggregator_quotes;
+use dex_aggregator::types::Quote;
 
 // Define our API models
-#[derive(Serialize, Deserialize, ToSchema, IntoParams)]
-struct Quote {
-    #[schema(example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8")]
-    sellTokenAddress: String,
-
-    #[schema(example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")]
-    buyTokenAddress: String,
-
-    #[schema(example = "1000000", nullable = true,)]
-    sellAmount: Option<String>,
-
-    #[schema(example = "2106900000", nullable = true,)]
-    buyAmount: Option<String>
-}
 
 // Generate the OpenAPI schema
 #[derive(OpenApi)]
@@ -56,6 +44,8 @@ struct ApiDoc;
     tag = "quotes"
 )]
 async fn get_quotes(Query(params): Query<Quote>) -> Json<Quote> {
+
+    get_aggregator_quotes(params.clone()).await;
     Json(params)
 }
 
