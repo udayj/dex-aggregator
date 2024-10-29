@@ -12,3 +12,5 @@ utoipa-swagger-ui = { version = "8.0.3", features = ["axum"] }
 serde_json = { version = "1.0"}
 starknet = { git = "https://github.com/xJonathanLEI/starknet-rs" }
 csv = "1.1"
+num-bigint = "0.4.6"
+num-traits = "0.2.19"

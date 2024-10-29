@@ -1,6 +1,7 @@
 use utoipa::{ToSchema, IntoParams};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use num_bigint::BigUint;
 
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
 pub struct Quote {
@@ -20,4 +21,21 @@ pub struct Quote {
 #[derive(Debug)]
 pub struct Graph {
     pub edges: HashMap<String, Vec<String>>,
+}
+
+pub type TokenPath = Vec<String>;
+pub type PathMap = HashMap<(String, String), Vec<TokenPath>>;
+pub type PoolMap = HashMap<(String, String), Pool>;
+#[derive(Clone, Debug)]
+pub struct Pool {
+    pub address: String,
+    pub reserve0: BigUint,
+    pub reserve1: BigUint,
+    pub fee: BigUint,     // Fee in basis points
+    pub reserves_updated: bool
+}
+
+#[derive(Clone, Debug)]
+pub struct TradePath {
+    pub tokens: Vec<String>,  // ["A", "B", "C"] for path A->B->C
 }
