@@ -4,7 +4,8 @@ use axum::{
     Json, Router,
 };
 use dex_aggregator::config;
-use dex_aggregator::orchestrator::{get_aggregator_quotes, update_and_save_pair_data};
+use dex_aggregator::orchestrator::{
+    get_aggregator_quotes, update_and_save_pair_data, update_and_save_path_data};
 use dex_aggregator::types::{DexConfig, Quote};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -25,7 +26,8 @@ struct DexConfigState {
 #[openapi(
     paths(
         get_quotes,
-        update_pair_data
+        update_pair_data,
+        update_path_data
     ),
     components(
         schemas(Quote)
@@ -70,6 +72,18 @@ async fn update_pair_data(State(state): State<DexConfigState>) {
     update_and_save_pair_data(state.config.as_ref()).await;
 }
 
+#[utoipa::path(
+    post,
+    path = "/update_path_data",
+    responses(
+        (status = 200, description = "Successfully updated path data")
+    ),
+    tag = "update path data"
+)]
+async fn update_path_data(State(state): State<DexConfigState>) {
+    update_and_save_path_data(state.config.as_ref()).await;
+}
+
 // API handlers
 
 #[tokio::main]
@@ -85,6 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .route("/quotes", get(get_quotes))
         .route("/update_pair_data", post(update_pair_data))
+        .route("/update_path_data", post(update_path_data))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", openapi))
         .with_state(config_state);
 

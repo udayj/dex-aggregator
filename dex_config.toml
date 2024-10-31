@@ -9,6 +9,6 @@ supported_tokens = [
         "0x5574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad",
         "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     ]
-pathmap_file = "pathmap.txt"
-poolmap_file = "poolmap.txt"
+pathmap_file = "pathmap.json"
+poolmap_file = "poolmap.json"
 rpc_url = "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa"

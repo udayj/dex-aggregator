@@ -7,6 +7,9 @@ pub type TokenPath = Vec<String>;
 pub type PathMap = HashMap<(String, String), Vec<TokenPath>>;
 pub type PoolMap = HashMap<(String, String), Pool>;
 
+#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone)]
+pub struct PathKey(String, String);
+
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
 pub struct Quote {
     #[schema(example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8")]
