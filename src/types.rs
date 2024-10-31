@@ -54,5 +54,6 @@ pub struct DexConfig {
     pub token_pair_file: String,
     pub supported_tokens: Vec<String>,
     pub pathmap_file: String,
-    pub poolmap_file: String
+    pub poolmap_file: String,
+    pub rpc_url: String,
 }

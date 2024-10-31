@@ -115,3 +115,5 @@ async fn main() -> Result<(),Box<dyn Error>> {
 // pool data can be updated independently
 // all data files in separate working directory
 
+
+// what happens if pair data is updated at the time that the pair data is being read by some other function

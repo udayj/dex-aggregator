@@ -17,7 +17,8 @@ impl Default for DexConfig {
         "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     ].iter().map(|x| x.to_string()).collect(),
             pathmap_file: "pathmap.txt".to_string(),
-            poolmap_file: "poolmap.txt".to_string()
+            poolmap_file: "poolmap.txt".to_string(),
+            rpc_url: "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa".to_string()
         }
     }
 }
