@@ -3,16 +3,16 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use dex_aggregator::quotes::get_aggregator_quotes;
-use dex_aggregator::types::{Quote, DexConfig};
+use dex_aggregator::config;
+use dex_aggregator::orchestrator::{get_aggregator_quotes, update_and_save_pair_data};
+use dex_aggregator::types::{DexConfig, Quote};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::sync::Arc;
 use utoipa::{IntoParams, OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
-use dex_aggregator::config;
-use std::error::Error;
-use std::sync::Arc;
-use std::path::PathBuf;
 
 // Hold configuration
 #[derive(Clone)]
@@ -20,12 +20,12 @@ struct DexConfigState {
     config: Arc<DexConfig>,
 }
 
-
 // Generate the OpenAPI schema
 #[derive(OpenApi)]
 #[openapi(
     paths(
         get_quotes,
+        update_pair_data
     ),
     components(
         schemas(Quote)
@@ -50,26 +50,41 @@ responses(
 ),
 tag = "quotes"
 )]
-async fn get_quotes(State(state): State<DexConfigState>, Query(params): Query<Quote>) -> Json<Quote> {
+async fn get_quotes(
+    State(state): State<DexConfigState>,
+    Query(params): Query<Quote>,
+) -> Json<Quote> {
     get_aggregator_quotes(state.config.as_ref(), params.clone()).await;
     Json(params)
 }
 
+#[utoipa::path(
+    post,
+    path = "/update_pair_data",
+    responses(
+        (status = 200, description = "Successfully updated pair data")
+    ),
+    tag = "update pair data"
+)]
+async fn update_pair_data(State(state): State<DexConfigState>) {
+    update_and_save_pair_data(state.config.as_ref()).await;
+}
+
 // API handlers
 
-
 #[tokio::main]
-async fn main() -> Result<(),Box<dyn Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     // Create API documentation
     let openapi = ApiDoc::openapi();
     let config_path = PathBuf::from("dex_config.toml");
 
     let config_state = DexConfigState {
-        config: Arc::new(DexConfig::load_from(config_path)?)
+        config: Arc::new(DexConfig::load_from(config_path)?),
     };
     // Build router with our endpoints and Swagger UI
     let app = Router::new()
         .route("/quotes", get(get_quotes))
+        .route("/update_pair_data", post(update_pair_data))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", openapi))
         .with_state(config_state);
 
@@ -78,8 +93,7 @@ async fn main() -> Result<(),Box<dyn Error>> {
     println!("Server running on http://localhost:3000");
     println!("Swagger UI available at http://localhost:3000/swagger-ui/");
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await?;
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     //tracing::debug!("listening on {}", listener.local_addr().unwrap());
     axum::serve(listener, app).await?;
 
@@ -106,7 +120,6 @@ async fn main() -> Result<(),Box<dyn Error>> {
 // chain id
 // routes [(percent:, (pair address, token in, token out, token in symbol, token out symbol)]
 
-
 // post endpoints - update pair data, store paths on disk & path map on disk, update latest pool data for all pools
 // all the above should persist data in storage, and other read functions should read data from storage
 // get_paths_between should read pathmap from storage
@@ -115,5 +128,14 @@ async fn main() -> Result<(),Box<dyn Error>> {
 // pool data can be updated independently
 // all data files in separate working directory
 
-
+// CONCERNS
 // what happens if pair data is updated at the time that the pair data is being read by some other function
+
+// Multi thread pair + pool
+// config
+// error handling
+// references, copy trait
+// post calls
+// json output
+// db abstraction
+// generics

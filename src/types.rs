@@ -3,11 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use utoipa::{IntoParams, ToSchema};
 
-
 pub type TokenPath = Vec<String>;
 pub type PathMap = HashMap<(String, String), Vec<TokenPath>>;
 pub type PoolMap = HashMap<(String, String), Pool>;
-
 
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
 pub struct Quote {
@@ -23,15 +21,14 @@ pub struct Quote {
     #[schema(example = "2106900000", nullable = true)]
     pub buyAmount: Option<String>,
 
-    #[schema(example = "true", default = false)]
-    pub getLatest: bool
+    #[schema(example = "true", default = false, nullable = true)]
+    pub getLatest: Option<bool>,
 }
 
 #[derive(Debug)]
 pub struct Graph {
     pub edges: HashMap<String, Vec<String>>,
 }
-
 
 #[derive(Clone, Debug)]
 pub struct Pool {
@@ -48,7 +45,7 @@ pub struct TradePath {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DexConfig {    
+pub struct DexConfig {
     pub working_dir: String,
     pub pair_file: String,
     pub token_pair_file: String,

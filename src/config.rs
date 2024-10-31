@@ -1,7 +1,7 @@
 use super::types::DexConfig;
-use std::path::PathBuf;
 use confy;
 use std::error::Error;
+use std::path::PathBuf;
 impl Default for DexConfig {
     fn default() -> Self {
         Self {
@@ -24,7 +24,6 @@ impl Default for DexConfig {
 }
 
 impl DexConfig {
-
     // Helper method to load from a specific path
     pub fn load_from(path: PathBuf) -> Result<Self, Box<dyn Error>> {
         let config: Self = confy::load_path(path)?;
