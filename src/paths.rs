@@ -1,20 +1,23 @@
 use super::token_graph::compute_graph_from_csv;
-use super::types::{PathMap, Pool, TradePath, PathKey};
+use super::types::{PathKey, PathMap, Pool, TradePath};
 use num_bigint::BigUint;
 use num_traits::{CheckedSub, Zero};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
+use std::fs;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
-use std::error::Error;
 use std::path::Path;
 use std::str::FromStr;
-use std::fs;
-use serde::{Serialize, Deserialize};
 
-pub fn store_path_data_on_disk<P: AsRef<Path>>(path: P, required_tokens: &Vec<String>, output_paths:&[P]) -> 
-Result<(), Box<dyn Error>> {
+pub fn store_path_data_on_disk<P: AsRef<Path>>(
+    path: P,
+    required_tokens: &Vec<String>,
+    output_paths: &[P],
+) -> Result<(), Box<dyn Error>> {
     let graph = compute_graph_from_csv(path, required_tokens)?;
-    for (i,token) in required_tokens.iter().enumerate() {
+    for (i, token) in required_tokens.iter().enumerate() {
         let start_node = token.to_string().clone();
         let mut target_nodes: HashSet<String> = vec![].into_iter().collect();
         for int_token in required_tokens {
@@ -27,10 +30,7 @@ Result<(), Box<dyn Error>> {
 
         // Write results to file
 
-        write_paths_to_file(
-            &paths,
-            &output_paths[i],
-        )?;
+        write_paths_to_file(&paths, &output_paths[i])?;
     }
     Ok(())
 }
@@ -108,24 +108,26 @@ pub fn get_all_paths<P: AsRef<Path>>(file_paths: &[P]) -> io::Result<PathMap> {
     Ok(combined_map)
 }
 
-pub fn store_pathmap_on_disk<P: AsRef<Path>>(pathmap_file: P, output_paths:&[P]) -> Result<(), Box< dyn Error>> {
-
-    let path_map = get_all_paths(
-        output_paths
-    )?;
+pub fn store_pathmap_on_disk<P: AsRef<Path>>(
+    pathmap_file: P,
+    output_paths: &[P],
+) -> Result<(), Box<dyn Error>> {
+    let path_map = get_all_paths(output_paths)?;
 
     let path_list = PathList::from_hash_map(&path_map);
     let json = serde_json::to_string_pretty(&path_list)?;
-    
+
     fs::write(pathmap_file, json)?;
     Ok(())
 }
 
-pub fn get_paths_between<P: AsRef<Path>>(pathmap_file: P, token_in: String, token_out: String, ) -> 
-Result<Vec<TradePath>, Box< dyn Error>> {
-
+pub fn get_paths_between<P: AsRef<Path>>(
+    pathmap_file: P,
+    token_in: String,
+    token_out: String,
+) -> Result<Vec<TradePath>, Box<dyn Error>> {
     let path_list_json = fs::read_to_string(pathmap_file)?;
-    let path_list:PathList = serde_json::from_str(&path_list_json)?;
+    let path_list: PathList = serde_json::from_str(&path_list_json)?;
     let path_map = path_list.to_hash_map();
     let dummy_value = vec![vec![]];
     let required_paths = path_map.get(&(token_in, token_out)).unwrap_or(&dummy_value);
@@ -180,6 +182,7 @@ impl TradePath {
                         reserves_updated: true,
                         address: pool.address.clone(),
                         fee: pool.fee.clone(),
+                        block_number: pool.block_number,
                     };
                     if current_amount.clone() == BigUint::zero() {
                         return BigUint::zero();
@@ -198,6 +201,7 @@ impl TradePath {
                         reserves_updated: true,
                         address: pool.address.clone(),
                         fee: pool.fee.clone(),
+                        block_number: pool.block_number,
                     };
                     if current_amount.clone() == BigUint::zero() {
                         return BigUint::zero();
@@ -257,6 +261,7 @@ impl TradePath {
                         reserves_updated: true,
                         address: pool.address.clone(),
                         fee: pool.fee.clone(),
+                        block_number: pool.block_number,
                     };
 
                     pools.insert(pool_key, updated_pool);
@@ -283,6 +288,7 @@ impl TradePath {
                         reserves_updated: true,
                         address: pool.address.clone(),
                         fee: pool.fee.clone(),
+                        block_number: pool.block_number,
                     };
 
                     pools.insert(pool_key, updated_pool);
@@ -296,10 +302,9 @@ impl TradePath {
     }
 }
 
-
 // The following is required to serialize and store pathmap as a json on disk
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct PathList{
+struct PathList {
     // Use a vector of entries instead of HashMap with tuple keys
     paths: Vec<PathEntry>,
 }
@@ -334,9 +339,7 @@ impl PathList {
     fn to_hash_map(&self) -> HashMap<(String, String), Vec<Vec<String>>> {
         self.paths
             .iter()
-            .map(|entry| {
-                ((entry.from.clone(), entry.to.clone()), entry.routes.clone())
-            })
+            .map(|entry| ((entry.from.clone(), entry.to.clone()), entry.routes.clone()))
             .collect()
     }
 }

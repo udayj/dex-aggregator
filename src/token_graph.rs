@@ -4,7 +4,10 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub fn compute_graph_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) -> io::Result<Graph> {
+pub fn compute_graph_from_csv<P: AsRef<Path>>(
+    path: P,
+    required_tokens: &[String],
+) -> io::Result<Graph> {
     let mut graph = Graph::new();
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);

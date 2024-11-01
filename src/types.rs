@@ -33,13 +33,14 @@ pub struct Graph {
     pub edges: HashMap<String, Vec<String>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Pool {
     pub address: String,
     pub reserve0: BigUint,
     pub reserve1: BigUint,
     pub fee: BigUint, // Fee in basis points
     pub reserves_updated: bool,
+    pub block_number: u64,
 }
 
 #[derive(Clone, Debug)]

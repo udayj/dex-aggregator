@@ -33,6 +33,8 @@ fn calculate_contract_address(salt: Felt, class_hash: Felt, constructor_calldata
         compute_hash_on_elements(constructor_calldata),
     ])
     .mod_floor(&ADDR_BOUND)
+
+    ANOTHER ALTERNATIVE TO GET TOKEN PAIR/POOLS IS TO ASK FACTORY/ROUTER WHETHER A POOL EXISTS FOR A PAIR
 }*/
 
 pub async fn get_latest_pair_data(
@@ -40,7 +42,6 @@ pub async fn get_latest_pair_data(
     pair_file: &str,
     token_pair_file: &str,
 ) -> Result<(), Box<dyn Error>> {
-   
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url).unwrap()));
 
     let calldata = vec![];
@@ -77,7 +78,7 @@ pub async fn get_latest_pair_data(
         }*/
         wrt.flush().unwrap();
     }
-    
+
     /*
     FOR RECORD ONLY
     // This approach might not work since one of the constructor calldata is fee_to_setter which could be different
@@ -166,6 +167,6 @@ pub async fn get_latest_pair_data(
         wrt.write_record(token_pair)?;
     }
     wrt.flush()?;
-    
+
     Ok(())
 }
