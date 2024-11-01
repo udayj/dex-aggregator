@@ -12,3 +12,4 @@ supported_tokens = [
 pathmap_file = "pathmap.json"
 poolmap_file = "poolmap.json"
 rpc_url = "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa"
+chain_id = "0x534e5f4d41494e"

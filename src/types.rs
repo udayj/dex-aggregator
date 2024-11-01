@@ -10,6 +10,7 @@ pub type PoolMap = HashMap<(String, String), Pool>;
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone)]
 pub struct PathKey(String, String);
 
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
 pub struct Quote {
     #[schema(example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8")]
@@ -26,6 +27,36 @@ pub struct Quote {
 
     #[schema(example = "true", default = false, nullable = true)]
     pub getLatest: Option<bool>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct ResponsePool {
+    pub pairAddress: String,
+    pub tokenIn: String,
+    pub tokenOut: String,
+    pub tokenInSymbol: String,
+    pub tokenOutsymbol: String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Route {
+
+    pub percent:f64,
+    pub path: Vec<ResponsePool>
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize,Deserialize)]
+pub struct QuoteResponse {
+
+    pub sellTokenAddress: String,
+    pub buyTokenAddress: String,
+    pub sellAmount: String,
+    pub buyAmount: String,
+    pub blockNumber: u64,
+    pub chainId: String,
+    pub routes: Vec<Route>,
 }
 
 #[derive(Debug)]
@@ -57,4 +88,5 @@ pub struct DexConfig {
     pub pathmap_file: String,
     pub poolmap_file: String,
     pub rpc_url: String,
+    pub chain_id: String
 }

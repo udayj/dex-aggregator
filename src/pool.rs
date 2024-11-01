@@ -85,6 +85,10 @@ pub async fn get_indexed_pool_data<P: AsRef<Path>>(
     let pool_list_json = fs::read_to_string(poolmap_file_path)?;
     let pool_list: PoolList = serde_json::from_str(&pool_list_json)?;
     let pool_map = pool_list.to_hash_map();
+    for (pool_key, pool) in pool_map.iter() {
+        println!("Pool Key {:?}", pool_key);
+        println!("Pool {:?}", pool);
+    }
     Ok(pool_map)
 }
 

@@ -8,7 +8,7 @@ use dex_aggregator::orchestrator::{
     get_aggregator_quotes, update_and_save_pair_data, update_and_save_path_data,
     update_and_save_pool_data,
 };
-use dex_aggregator::types::{DexConfig, Quote};
+use dex_aggregator::types::{DexConfig, Quote, QuoteResponse};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
@@ -58,9 +58,9 @@ tag = "quotes"
 async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<Quote>,
-) -> Json<Quote> {
-    get_aggregator_quotes(state.config.as_ref(), params.clone()).await;
-    Json(params)
+) -> Json<QuoteResponse> {
+    let response = get_aggregator_quotes(state.config.as_ref(), params.clone()).await.unwrap();
+    Json(response)
 }
 
 #[utoipa::path(
@@ -170,3 +170,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
 // json output
 // db abstraction
 // generics
+// read api key from env

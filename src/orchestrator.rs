@@ -2,7 +2,7 @@ use super::optimization::{optimize_amount_in, optimize_amount_out};
 use super::pair_data::get_latest_pair_data;
 use super::paths::{get_paths_between, store_path_data_on_disk, store_pathmap_on_disk};
 use super::pool::{get_latest_pool_data, index_latest_poolmap_data, get_indexed_pool_data};
-use super::types::{DexConfig, Pool};
+use super::types::{DexConfig, Pool, ResponsePool, Route, QuoteResponse, TradePath};
 use super::types::Quote;
 use num_bigint::BigUint;
 use std::error::Error;
@@ -77,7 +77,7 @@ pub async fn update_and_save_pool_data(config: &DexConfig) -> Result<(), Box<dyn
 pub async fn get_aggregator_quotes(
     config: &DexConfig,
     params: Quote,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<QuoteResponse, Box<dyn Error>> {
     if !Path::new(config.working_dir.as_str()).exists() {
         return Err("Token Path data files not found".into());
     }
@@ -89,8 +89,8 @@ pub async fn get_aggregator_quotes(
 
     let required_trade_paths = get_paths_between(
         pathmap_file_path,
-        params.sellTokenAddress,
-        params.buyTokenAddress,
+        params.sellTokenAddress.clone(),
+        params.buyTokenAddress.clone(),
     )?;
 
     let pool_map:HashMap<(String, String), Pool> = if params.getLatest.is_some_and(|x| x) {
@@ -112,17 +112,120 @@ pub async fn get_aggregator_quotes(
     if params.buyAmount.is_some() {
         let (splits, total_amount) = optimize_amount_in(
             required_trade_paths.clone(),
-            pool_map,
+            pool_map.clone(),
             BigUint::from(params.buyAmount.unwrap().parse::<u128>().unwrap()),
         );
         println!("Total Amount In:{}\n Splits: {:?}\n", total_amount, splits);
+        let routes: Vec<Route> = splits
+        .iter()
+        .zip(required_trade_paths.iter())
+        .map(|(split, trade_path)| {
+            Route {
+                percent: Pool::to_f64(split),
+                path: build_response_path(trade_path, &pool_map),
+            }
+        })
+        .collect();
+    
+        Ok(QuoteResponse {
+        sellTokenAddress: params.sellTokenAddress.clone(),
+        buyTokenAddress: params.buyTokenAddress,
+        sellAmount: params.sellAmount.unwrap(),
+        buyAmount: total_amount.to_string(),
+        blockNumber: 1,
+        chainId: config.chain_id.clone(),
+        routes,
+    })
     } else {
         let (splits, total_amount) = optimize_amount_out(
-            required_trade_paths,
-            pool_map,
-            BigUint::from(params.sellAmount.unwrap().parse::<u128>().unwrap()),
+            required_trade_paths.clone(),
+            pool_map.clone(),
+            BigUint::from(params.sellAmount.clone().unwrap().parse::<u128>().unwrap()),
         );
+
         println!("Total Amount Out:{}\n Splits: {:?}\n", total_amount, splits);
+
+        let routes: Vec<Route> = splits
+        .iter()
+        .zip(required_trade_paths.iter())
+        .filter_map(|(split, trade_path)| {
+
+            if *split!=BigUint::ZERO  {
+                 Some(Route {
+                percent: Pool::to_f64(split),
+                path: build_response_path(trade_path, &pool_map),
+            })
+        }
+            else {
+                None
+            }
+            
+           
+        })
+        .collect();
+    
+        Ok(QuoteResponse {
+        sellTokenAddress: params.sellTokenAddress.clone(),
+        buyTokenAddress: params.buyTokenAddress.clone(),
+        sellAmount: params.sellAmount.unwrap(),
+        buyAmount: total_amount.to_string(),
+        blockNumber: 1,
+        chainId: config.chain_id.clone(),
+        routes,
+    })
+
     }
-    Ok(())
+    
+}
+
+// output json
+// token in
+// token out
+// sell amount - amount in
+// buy amount - amount out
+// block number - "latest"/block_number based on pool data
+// chain id
+// routes [[percent:x, Vec<(pair address, token in, token out, token in symbol, token out symbol)]
+
+fn build_response_path(
+    trade_path: &TradePath,
+    pool_map: &HashMap<(String, String), Pool>,
+) -> Vec<ResponsePool> {
+    trade_path
+        .tokens
+        .windows(2)
+        .map(|window| {
+            build_response_pool(&window[0], &window[1], pool_map).unwrap()
+        })
+        .collect()
+}
+
+fn build_response_pool(
+    token_in: &str,
+    token_out: &str,
+    pool_map: &HashMap<(String, String), Pool>,
+) -> Option<ResponsePool> {
+
+    let symbol_list: Vec<(&str, &str)> = vec![
+        ("0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7","ETH"),
+        ("0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8", "USDT"),
+        ("0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8", "USDC"),
+        ("0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2", "wstETH"),
+        ("0x5574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad", "DAI"),
+        ("0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d", "STRK"),
+    ];
+
+    let symbol_map:HashMap<String, String> = symbol_list.iter().map(|token| (token.0.to_string(),token.1.to_string())).collect();
+    // Try to find pool in both directions
+    let pool = pool_map
+        .get(&(token_in.to_string(), token_out.to_string()))
+        .or_else(|| pool_map.get(&(token_out.to_string(), token_in.to_string())));
+
+    pool.map(|p| ResponsePool {
+        pairAddress: p.address.clone(),
+        tokenIn: token_in.to_string(),
+        tokenOut: token_out.to_string(),
+        tokenInSymbol: symbol_map.get(token_in).unwrap().to_string(),  // You might want to add actual symbol mapping
+        tokenOutsymbol: symbol_map.get(token_out).unwrap().to_string(), // You might want to add actual symbol mapping
+    })
 }

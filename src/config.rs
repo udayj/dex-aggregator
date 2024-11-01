@@ -18,7 +18,8 @@ impl Default for DexConfig {
     ].iter().map(|x| x.to_string()).collect(),
             pathmap_file: "pathmap.txt".to_string(),
             poolmap_file: "poolmap.txt".to_string(),
-            rpc_url: "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa".to_string()
+            rpc_url: "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa".to_string(),
+            chain_id: "0x534e5f4d41494e".to_string()
         }
     }
 }
