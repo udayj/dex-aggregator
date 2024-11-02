@@ -1,10 +1,8 @@
+use super::constants::SCALE;
 use super::types::{Pool, PoolMap, TradePath};
 use num_bigint::BigUint;
 use num_traits::{CheckedSub, ConstZero, One, Zero};
 use std::cmp::Ordering;
-
-const PRECISION: u32 = 18;
-const SCALE: f64 = 1000000 as f64; // For fees (1 = 0.0001%)
 
 pub fn optimize_amount_out(
     required_trade_paths: Vec<TradePath>,

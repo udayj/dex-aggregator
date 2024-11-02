@@ -1,9 +1,9 @@
-use super::optimization::{optimize_amount_in, optimize_amount_out};
-use super::pair_data::get_latest_pair_data;
-use super::paths::{get_paths_between, store_path_data_on_disk, store_pathmap_on_disk};
-use super::pool::{get_indexed_pool_data, get_latest_pool_data, index_latest_poolmap_data};
-use super::types::QuoteRequest;
-use super::types::{DexConfig, Pool, QuoteResponse, ResponsePool, Route, TradePath};
+use super::core::optimization::{optimize_amount_in, optimize_amount_out};
+use super::core::pair::index_latest_pair_data;
+use super::core::paths::{get_paths_between, update_path_data, update_pathmap};
+use super::core::pool::{get_indexed_pool_data, get_latest_pool_data, index_latest_poolmap_data};
+use super::core::types::{Pool, TradePath};
+use super::types::{DexConfig, QuoteRequest, QuoteResponse, ResponsePool, Route};
 use anyhow::{anyhow, Result};
 use num_bigint::BigUint;
 use std::collections::HashMap;
@@ -21,14 +21,14 @@ pub fn validate_request(config: &DexConfig, request: &QuoteRequest) -> Result<()
     {
         return Err(anyhow!("Unsupported token address"));
     }
+
     if request.buyAmount.is_none() && request.sellAmount.is_none() {
         return Err(anyhow!("Sell Amount is mandatory"));
     }
-    // check if token address is supported
     Ok(())
 }
 
-pub async fn update_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
     if !Path::new(config.working_dir.as_str()).exists() {
         fs::create_dir(config.working_dir.clone())?;
     }
@@ -38,7 +38,7 @@ pub async fn update_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn
     let dir = Path::new(config.working_dir.as_str());
     let token_pair_file_path = dir.join(config.token_pair_file.clone());
 
-    get_latest_pair_data(
+    index_latest_pair_data(
         &config.rpc_url,
         pair_file_path.to_str().unwrap(),
         token_pair_file_path.to_str().unwrap(),
@@ -47,7 +47,7 @@ pub async fn update_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn
     Ok(())
 }
 
-pub async fn update_and_save_path_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_path_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
     if !Path::new(config.working_dir.as_str()).exists() {
         return Err("Token Pair data file not found".into());
     }
@@ -63,16 +63,16 @@ pub async fn update_and_save_path_data(config: &DexConfig) -> Result<(), Box<dyn
         let token_paths_file = dir.join(token.clone() + ".txt");
         output_paths.push(token_paths_file);
     }
-    store_path_data_on_disk(
+    update_path_data(
         token_pair_file_path,
         &config.supported_tokens,
         &output_paths,
     )?;
-    store_pathmap_on_disk(pathmap_file_path, &output_paths)?;
+    update_pathmap(pathmap_file_path, &output_paths)?;
     Ok(())
 }
 
-pub async fn update_and_save_pool_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_pool_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
     if !Path::new(config.working_dir.as_str()).exists() {
         return Err("Token Pair data file not found".into());
     }

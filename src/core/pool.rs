@@ -1,8 +1,9 @@
 use super::constants::GET_RESERVES_SELECTOR;
+use super::indexer::pool_indexer::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
 use super::types::{Pool, PoolMap, TradePath};
+use super::Result;
 use num_bigint::BigUint;
 use num_traits::{CheckedSub, ConstZero, One, Zero};
-use serde::{Deserialize, Serialize};
 use starknet::{
     core::types::{
         BlockId, BlockTag, EventFilter, Felt, FunctionCall, MaybePendingBlockWithTxHashes,
@@ -20,13 +21,9 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, fs::File};
-
 const SCALE: f64 = 1000000 as f64;
 
-fn create_pools_from_csv<P: AsRef<Path>>(
-    path: P,
-    required_tokens: &[String],
-) -> io::Result<PoolMap> {
+fn create_pools_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) -> Result<PoolMap> {
     let mut pool_map = PoolMap::new();
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -69,22 +66,15 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     token_pair_file_path: P,
     poolmap_file_path: P,
     required_tokens: &[String],
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let pool_map = get_latest_pool_data(rpc_url, token_pair_file_path, required_tokens).await?;
 
-    let pool_list = PoolList::from_hash_map(&pool_map);
-    let json = serde_json::to_string_pretty(&pool_list)?;
-
-    fs::write(poolmap_file_path, json)?;
+    write_poolmap_data_on_disk(poolmap_file_path, &pool_map);
     Ok(())
 }
 
-pub async fn get_indexed_pool_data<P: AsRef<Path>>(
-    poolmap_file_path: P,
-) -> Result<PoolMap, Box<dyn Error>> {
-    let pool_list_json = fs::read_to_string(poolmap_file_path)?;
-    let pool_list: PoolList = serde_json::from_str(&pool_list_json)?;
-    let pool_map = pool_list.to_hash_map();
+pub async fn get_indexed_pool_data<P: AsRef<Path>>(poolmap_file_path: P) -> Result<PoolMap> {
+    let pool_map = read_poolmap_data_from_disk(poolmap_file_path)?;
     for (pool_key, pool) in pool_map.iter() {
         println!("Pool Key {:?}", pool_key);
         println!("Pool {:?}", pool);
@@ -96,7 +86,7 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
     rpc_url: &str,
     token_pair_file_path: P,
     required_tokens: &[String],
-) -> Result<PoolMap, Box<dyn Error>> {
+) -> Result<PoolMap> {
     let mut pool_map = create_pools_from_csv(token_pair_file_path, required_tokens).unwrap();
     let pool_entries: Vec<((String, String), Pool)> = pool_map
         .iter()
@@ -258,44 +248,5 @@ impl Pool {
 
         // Scale back down and multiply by scaling factor
         return base;
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct PoolEntry {
-    token0: String,
-    token1: String,
-    pool: Pool,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct PoolList {
-    pools: Vec<PoolEntry>,
-}
-
-impl PoolList {
-    fn from_hash_map(map: &HashMap<(String, String), Pool>) -> Self {
-        let pools = map
-            .iter()
-            .map(|((token0, token1), pool)| PoolEntry {
-                token0: token0.clone(),
-                token1: token1.clone(),
-                pool: pool.clone(),
-            })
-            .collect();
-
-        Self { pools }
-    }
-
-    fn to_hash_map(&self) -> HashMap<(String, String), Pool> {
-        self.pools
-            .iter()
-            .map(|entry| {
-                (
-                    (entry.token0.clone(), entry.token1.clone()),
-                    entry.pool.clone(),
-                )
-            })
-            .collect()
     }
 }

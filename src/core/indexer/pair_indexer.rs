@@ -1,4 +1,5 @@
 use super::constants::{FACTORY_ADDRESS, GET_ALL_PAIRS_SELECTOR, TOKEN0_SELECTOR, TOKEN1_SELECTOR};
+use super::Result;
 use csv::Writer;
 use starknet::{
     core::types::{BlockId, BlockTag, Felt, FunctionCall},
@@ -7,41 +8,11 @@ use starknet::{
         Provider, Url,
     },
 };
-use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-/*
-THIS CODE IS ONLY NEEDED WHEN DETERMINISTIC PAIR ADDRESS IS COMPUTED
-const CONTRACT_ADDRESS_PREFIX: Felt =
-    Felt::from_hex_unchecked("0x535441524b4e45545f434f4e54524143545f41444452455353");
 
-const ADDR_BOUND: NonZeroFelt = NonZeroFelt::from_raw([
-    576459263475590224,
-    18446744073709255680,
-    160989183,
-    18446743986131443745,
-]);
-
-fn calculate_contract_address(salt: Felt, class_hash: Felt, constructor_calldata: &[Felt]) -> Felt {
-    compute_hash_on_elements(&[
-        CONTRACT_ADDRESS_PREFIX,
-        Felt::from_hex(
-                "0x00dad44c139a476c7a17fc8141e6db680e9abc9f56fe249a105094c44382c2fd").unwrap(),
-        salt,
-        class_hash,
-        compute_hash_on_elements(constructor_calldata),
-    ])
-    .mod_floor(&ADDR_BOUND)
-
-    ANOTHER ALTERNATIVE TO GET TOKEN PAIR/POOLS IS TO ASK FACTORY/ROUTER WHETHER A POOL EXISTS FOR A PAIR
-}*/
-
-pub async fn get_latest_pair_data(
-    rpc_url: &str,
-    pair_file: &str,
-    token_pair_file: &str,
-) -> Result<(), Box<dyn Error>> {
+pub async fn index_pair_data(rpc_url: &str, pair_file: &str, token_pair_file: &str) -> Result<()> {
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url).unwrap()));
 
     let calldata = vec![];
@@ -73,13 +44,10 @@ pub async fn get_latest_pair_data(
             .take(hex_pairs.len())
             .skip(1)
             .try_for_each(|record| wrt.write_record([record]))?;
-        /*for pair in 1..1037 {
-            wrt.write_record(&[hex_pairs[pair].as_str()])?;
-        }*/
+
         wrt.flush().unwrap();
     }
 
-    list_of_pairs = list_of_pairs[..13].to_vec();
     /*
     FOR RECORD ONLY
     // This approach might not work since one of the constructor calldata is fee_to_setter which could be different
@@ -113,13 +81,13 @@ pub async fn get_latest_pair_data(
         .take(list_of_pairs.len())
         .skip(1)
         .collect();
-    let mut output: Arc<Mutex<Vec<Vec<String>>>> = Arc::new(Mutex::new(vec![]));
+    let output: Arc<Mutex<Vec<Vec<String>>>> = Arc::new(Mutex::new(vec![]));
     // consider getting batch size from config
     for batch in list_of_pairs.chunks(50) {
         let mut threads = vec![];
         let batch_owned = batch.to_vec();
         for pair in batch_owned {
-            let mut shared_output = output.clone();
+            let shared_output = output.clone();
             let rpc_url = rpc_url.clone();
             let worker_thread = tokio::spawn(async move {
                 let provider =
