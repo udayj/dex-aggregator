@@ -1,4 +1,4 @@
-working_dir = "working_dir"
+working_dir = "working_dir2"
 pair_file = "pairs1.csv"
 token_pair_file = "all_pair_tokens1.csv"
 supported_tokens = [

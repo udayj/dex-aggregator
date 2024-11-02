@@ -1,19 +1,23 @@
 use axum::{
     extract::{Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{get, post},
     Json, Router,
 };
 use dex_aggregator::config;
 use dex_aggregator::orchestrator::{
     get_aggregator_quotes, update_and_save_pair_data, update_and_save_path_data,
-    update_and_save_pool_data,
+    update_and_save_pool_data, validate_request,
 };
-use dex_aggregator::types::{DexConfig, QuoteRequest, QuoteResponse, Route, ResponsePool};
+use dex_aggregator::types::{DexConfig, QuoteRequest, QuoteResponse, ResponsePool, Route};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::error::Error;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use thiserror::Error;
 use utoipa::{IntoParams, OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -21,6 +25,30 @@ use utoipa_swagger_ui::SwaggerUi;
 #[derive(Clone)]
 struct DexConfigState {
     config: Arc<DexConfig>,
+}
+
+#[derive(Error, Debug)]
+pub enum ApiError {
+    #[error("Invalid request: {0}")]
+    BadRequest(String),
+
+    #[error("Internal server error: {0}")]
+    Internal(String),
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            ApiError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
+            ApiError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+        };
+
+        let body = Json(json!({
+            "error": error_message,
+        }));
+
+        (status, body).into_response()
+    }
 }
 
 // Generate the OpenAPI schema
@@ -48,60 +76,83 @@ struct ApiDoc;
 get,
 path = "/quotes",
 params(
-    ("sellTokenAddress" = String, Query, description = "Address of token being sold"),
-    ("buyTokenAddress" = String, Query, description = "Address of token being bought"),
-    ("sellAmount" = Option<String>, Query, description = "Amount of tokens being sold"),
-    ("buyAmount" = Option<String>, Query, description = "Amount of tokens being bought")
+    ("sellTokenAddress" = String, Query, description = "Address of token being sold", example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8"),
+    ("buyTokenAddress" = String, Query, description = "Address of token being bought", example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"),
+    ("sellAmount" = Option<String>, Query, description = "Amount of tokens being sold in decimal format (must be present if buyAmount not present) - if both present sellAmount is considered", example = "10000000000"),
+    ("buyAmount" = Option<String>, Query, description = "Amount of tokens being bought in decimal format (must be present if sellAmount not present)", example = "210690000000000"),
+    ("getLatest" = Option<bool>, Query, description = "When true it indicates to server to get latest reserves from on-chain else use prior indexed data", example = "true")
 ),
 responses(
-    (status = 200, description = "Trade Quote", body = QuoteResponse)
+    (status = 200, description = "OK", body = QuoteResponse),
+    (status = 400, description = "Bad Request"),
+    (status = 500, description = "Internal Server Error")
 ),
 tag = "quotes"
 )]
 async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<QuoteRequest>,
-) -> Json<QuoteResponse> {
-    let response = get_aggregator_quotes(state.config.as_ref(), params.clone()).await.unwrap();
-    Json(response)
+) -> Result<Json<QuoteResponse>, ApiError> {
+    if let Err(e) = validate_request(state.config.as_ref(), &params) {
+        return Err(ApiError::BadRequest(format!("{}", e)));
+    }
+
+    match get_aggregator_quotes(state.config.as_ref(), params.clone()).await {
+        Ok(response) => Ok(Json(response)),
+        Err(e) => Err(ApiError::Internal(format!("Failed to get quotes: {}", e))),
+    }
 }
 
 #[utoipa::path(
     post,
     path = "/update_pair_data",
     responses(
-        (status = 204, description = "Successfully updated pair data")
+        (status = 204, description = "Successfully updated pair data"),
+        (status = 500, description = "Internal Server Error")
     ),
     tag = "update pair data"
 )]
-async fn update_pair_data(State(state): State<DexConfigState>) {
-    update_and_save_pair_data(state.config.as_ref()).await;
+async fn update_pair_data(State(state): State<DexConfigState>) -> Result<StatusCode, ApiError> {
+    update_and_save_pair_data(state.config.as_ref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to update pair data: {}", e)))?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
     post,
     path = "/update_path_data",
     responses(
-        (status = 204, description = "Successfully updated path data")
+        (status = 204, description = "Successfully updated path data"),
+        (status = 500, description = "Internal Server Error")
     ),
     tag = "update path data"
 )]
-async fn update_path_data(State(state): State<DexConfigState>) {
-    update_and_save_path_data(state.config.as_ref()).await;
+async fn update_path_data(State(state): State<DexConfigState>) -> Result<StatusCode, ApiError> {
+    update_and_save_path_data(state.config.as_ref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to update path data: {}", e)))?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[utoipa::path(
     post,
     path = "/update_pool_data",
     responses(
-        (status = 204, description = "Successfully updated pool data")
+        (status = 204, description = "Successfully updated pool data"),
+        (status = 500, description = "Internal Server Error")
     ),
     tag = "update pool data"
 )]
-async fn update_pool_data(State(state): State<DexConfigState>) {
-    update_and_save_pool_data(state.config.as_ref()).await;
-}
+async fn update_pool_data(State(state): State<DexConfigState>) -> Result<StatusCode, ApiError> {
+    update_and_save_pool_data(state.config.as_ref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to update pool data: {}", e)))?;
 
+    Ok(StatusCode::NO_CONTENT)
+}
 // API handlers
 
 #[tokio::main]

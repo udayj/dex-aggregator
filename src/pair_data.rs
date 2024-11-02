@@ -79,6 +79,7 @@ pub async fn get_latest_pair_data(
         wrt.flush().unwrap();
     }
 
+    list_of_pairs = list_of_pairs[..13].to_vec();
     /*
     FOR RECORD ONLY
     // This approach might not work since one of the constructor calldata is fee_to_setter which could be different

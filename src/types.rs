@@ -19,10 +19,10 @@ pub struct QuoteRequest {
     #[schema(example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")]
     pub buyTokenAddress: String,
 
-    #[schema(example = "1000000", nullable = true)]
+    #[schema(example = "1000000")]
     pub sellAmount: Option<String>,
 
-    #[schema(example = "2106900000", nullable = true)]
+    #[schema(example = "2106900000")]
     pub buyAmount: Option<String>,
 
     #[schema(example = "true", default = false, nullable = true)]
@@ -36,20 +36,18 @@ pub struct ResponsePool {
     pub tokenIn: String,
     pub tokenOut: String,
     pub tokenInSymbol: String,
-    pub tokenOutsymbol: String
+    pub tokenOutsymbol: String,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct Route {
-
-    pub percent:f64,
-    pub path: Vec<ResponsePool>
+    pub percent: f64,
+    pub path: Vec<ResponsePool>,
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize,Deserialize, ToSchema)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct QuoteResponse {
-
     pub sellTokenAddress: String,
     pub buyTokenAddress: String,
     pub sellAmount: String,
@@ -88,5 +86,5 @@ pub struct DexConfig {
     pub pathmap_file: String,
     pub poolmap_file: String,
     pub rpc_url: String,
-    pub chain_id: String
+    pub chain_id: String,
 }
