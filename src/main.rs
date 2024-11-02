@@ -8,7 +8,7 @@ use dex_aggregator::orchestrator::{
     get_aggregator_quotes, update_and_save_pair_data, update_and_save_path_data,
     update_and_save_pool_data,
 };
-use dex_aggregator::types::{DexConfig, Quote, QuoteResponse};
+use dex_aggregator::types::{DexConfig, QuoteRequest, QuoteResponse, Route, ResponsePool};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
@@ -33,7 +33,10 @@ struct DexConfigState {
         update_pool_data
     ),
     components(
-        schemas(Quote)
+        schemas(QuoteRequest),
+        schemas(QuoteResponse),
+        schemas(Route),
+        schemas(ResponsePool)
     ),
     tags(
         (name = "quotes", description = "Trade quotes for a token pair")
@@ -51,13 +54,13 @@ params(
     ("buyAmount" = Option<String>, Query, description = "Amount of tokens being bought")
 ),
 responses(
-    (status = 200, description = "Trade Quote", body = Quote)
+    (status = 200, description = "Trade Quote", body = QuoteResponse)
 ),
 tag = "quotes"
 )]
 async fn get_quotes(
     State(state): State<DexConfigState>,
-    Query(params): Query<Quote>,
+    Query(params): Query<QuoteRequest>,
 ) -> Json<QuoteResponse> {
     let response = get_aggregator_quotes(state.config.as_ref(), params.clone()).await.unwrap();
     Json(response)
@@ -67,7 +70,7 @@ async fn get_quotes(
     post,
     path = "/update_pair_data",
     responses(
-        (status = 200, description = "Successfully updated pair data")
+        (status = 204, description = "Successfully updated pair data")
     ),
     tag = "update pair data"
 )]
@@ -79,7 +82,7 @@ async fn update_pair_data(State(state): State<DexConfigState>) {
     post,
     path = "/update_path_data",
     responses(
-        (status = 200, description = "Successfully updated path data")
+        (status = 204, description = "Successfully updated path data")
     ),
     tag = "update path data"
 )]
@@ -91,7 +94,7 @@ async fn update_path_data(State(state): State<DexConfigState>) {
     post,
     path = "/update_pool_data",
     responses(
-        (status = 200, description = "Successfully updated pool data")
+        (status = 204, description = "Successfully updated pool data")
     ),
     tag = "update pool data"
 )]

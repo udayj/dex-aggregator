@@ -12,7 +12,7 @@ pub struct PathKey(String, String);
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ToSchema, IntoParams, Clone)]
-pub struct Quote {
+pub struct QuoteRequest {
     #[schema(example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8")]
     pub sellTokenAddress: String,
 
@@ -30,7 +30,7 @@ pub struct Quote {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ResponsePool {
     pub pairAddress: String,
     pub tokenIn: String,
@@ -39,7 +39,7 @@ pub struct ResponsePool {
     pub tokenOutsymbol: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct Route {
 
     pub percent:f64,
@@ -47,7 +47,7 @@ pub struct Route {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize,Deserialize, ToSchema)]
 pub struct QuoteResponse {
 
     pub sellTokenAddress: String,

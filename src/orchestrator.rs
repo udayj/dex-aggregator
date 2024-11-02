@@ -3,7 +3,7 @@ use super::pair_data::get_latest_pair_data;
 use super::paths::{get_paths_between, store_path_data_on_disk, store_pathmap_on_disk};
 use super::pool::{get_latest_pool_data, index_latest_poolmap_data, get_indexed_pool_data};
 use super::types::{DexConfig, Pool, ResponsePool, Route, QuoteResponse, TradePath};
-use super::types::Quote;
+use super::types::QuoteRequest;
 use num_bigint::BigUint;
 use std::error::Error;
 use std::fs;
@@ -76,7 +76,7 @@ pub async fn update_and_save_pool_data(config: &DexConfig) -> Result<(), Box<dyn
 
 pub async fn get_aggregator_quotes(
     config: &DexConfig,
-    params: Quote,
+    params: QuoteRequest,
 ) -> Result<QuoteResponse, Box<dyn Error>> {
     if !Path::new(config.working_dir.as_str()).exists() {
         return Err("Token Path data files not found".into());
