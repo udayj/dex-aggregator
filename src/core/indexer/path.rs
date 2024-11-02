@@ -4,19 +4,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 
 pub fn write_paths_to_file<P: AsRef<Path>>(
     paths: &HashMap<String, Vec<Vec<String>>>,
     output_path: &P,
-) -> io::Result<()> {
+) -> Result<()> {
     let mut file = File::create(output_path)?;
 
     for (_, path_list) in paths.iter() {
         //writeln!(file, "\nPaths to {}:", destination)?;
         let mut new_path_list = path_list.clone();
-        new_path_list.sort_by(|a, b| a.len().cmp(&b.len()));
+        new_path_list.sort_by_key(|a| a.len());
         for path in new_path_list.iter() {
             writeln!(file, "{}", path.join(" "))?;
         }
@@ -28,17 +28,14 @@ pub fn read_token_paths<P: AsRef<Path>>(file_path: P) -> Result<PathMap> {
     // Create a HashMap to store paths indexed by (start_token, end_token)
     let mut path_map: PathMap = HashMap::new();
 
-    // Open the file
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
 
-    // Process each line
     for line in reader.lines() {
         let line = line?;
 
         // Split the line by whitespace
         let tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
-
         // Skip invalid lines
         if tokens.len() < 2 {
             continue;
@@ -54,7 +51,7 @@ pub fn read_token_paths<P: AsRef<Path>>(file_path: P) -> Result<PathMap> {
         // Add the path to the map
         path_map
             .entry(path_key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(tokens);
     }
 
@@ -65,7 +62,7 @@ pub fn write_pathmap_on_disk<P: AsRef<Path>>(
     pathmap_file: P,
     path_map: &HashMap<(String, String), Vec<Vec<String>>>,
 ) -> Result<()> {
-    let path_list = PathList::from_hash_map(&path_map);
+    let path_list = PathList::from_hash_map(path_map);
     let json = serde_json::to_string_pretty(&path_list)?;
 
     fs::write(pathmap_file, json)?;
@@ -94,9 +91,6 @@ struct PathEntry {
 }
 
 impl PathList {
-    fn new() -> Self {
-        Self { paths: Vec::new() }
-    }
 
     // Convert from HashMap to the serializable structure
     fn from_hash_map(map: &HashMap<(String, String), Vec<Vec<String>>>) -> Self {

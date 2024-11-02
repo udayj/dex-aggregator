@@ -1,6 +1,6 @@
 use super::core::optimization::{optimize_amount_in, optimize_amount_out};
 use super::core::pair::index_latest_pair_data;
-use super::core::paths::{get_paths_between, update_path_data, update_pathmap};
+use super::core::path::{get_paths_between, update_path_data, update_pathmap};
 use super::core::pool::{get_indexed_pool_data, get_latest_pool_data, index_latest_poolmap_data};
 use super::core::types::{Pool, TradePath};
 use super::types::{DexConfig, QuoteRequest, QuoteResponse, ResponsePool, Route};
@@ -96,7 +96,7 @@ pub async fn get_aggregator_quotes(
     params: QuoteRequest,
 ) -> Result<QuoteResponse> {
     if !Path::new(config.working_dir.as_str()).exists() {
-        return Err(anyhow!("Token Path data files not found"));
+        return Err(anyhow!("Token Pair/Path data files not found"));
     }
     let dir = Path::new(config.working_dir.as_str());
     let pathmap_file_path = dir.join(config.pathmap_file.clone());
@@ -111,7 +111,7 @@ pub async fn get_aggregator_quotes(
     )
     .map_err(|e| anyhow!(format!("{}", e)))?;
 
-    let pool_map: HashMap<(String, String), Pool> = if params.getLatest.is_some_and(|x| x) {
+    let (pool_map, block_number) = if params.getLatest.is_some_and(|x| x) {
         get_latest_pool_data(
             &config.rpc_url,
             token_pair_file_path,
@@ -134,8 +134,6 @@ pub async fn get_aggregator_quotes(
             BigUint::from(params.sellAmount.clone().unwrap().parse::<u128>().unwrap()),
         );
 
-        println!("Total Amount Out:{}\n Splits: {:?}\n", total_amount, splits);
-
         let routes: Vec<Route> = splits
             .iter()
             .zip(required_trade_paths.iter())
@@ -156,7 +154,7 @@ pub async fn get_aggregator_quotes(
             buyTokenAddress: params.buyTokenAddress.clone(),
             sellAmount: params.sellAmount.unwrap(),
             buyAmount: total_amount.to_string(),
-            blockNumber: 1,
+            blockNumber: block_number,
             chainId: config.chain_id.clone(),
             routes,
         })
@@ -187,7 +185,7 @@ pub async fn get_aggregator_quotes(
             buyTokenAddress: params.buyTokenAddress,
             sellAmount: total_amount.to_string(),
             buyAmount: params.buyAmount.unwrap(),
-            blockNumber: 1,
+            blockNumber: block_number,
             chainId: config.chain_id.clone(),
             routes,
         })

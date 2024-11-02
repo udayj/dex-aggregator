@@ -9,7 +9,7 @@ pub fn write_poolmap_data_on_disk<P: AsRef<Path>>(
     poolmap_file_path: P,
     pool_map: &HashMap<(String, String), Pool>,
 ) -> Result<()> {
-    let pool_list = PoolList::from_hash_map(&pool_map);
+    let pool_list = PoolList::from_hash_map(pool_map);
     let json = serde_json::to_string_pretty(&pool_list)?;
 
     fs::write(poolmap_file_path, json)?;

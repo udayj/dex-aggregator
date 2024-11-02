@@ -1,4 +1,4 @@
-use super::indexer::pair_indexer::index_pair_data;
+use super::indexer::pair::index_pair_data;
 use super::Result;
 
 pub async fn index_latest_pair_data(

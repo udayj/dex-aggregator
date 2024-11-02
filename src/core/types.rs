@@ -19,7 +19,7 @@ pub struct Pool {
     pub address: String,
     pub reserve0: BigUint,
     pub reserve1: BigUint,
-    pub fee: BigUint, // Fee in basis points
+    pub fee: BigUint, // Fee in basis points - unused since fee is constant
     pub reserves_updated: bool,
     pub block_number: u64,
 }

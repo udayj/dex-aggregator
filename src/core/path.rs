@@ -3,12 +3,12 @@ use num_traits::{CheckedSub, Zero};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::str::FromStr;
-use super::indexer::path_indexer::{
+use super::indexer::path::{
     read_pathmap_from_disk, read_token_paths, write_pathmap_on_disk, write_paths_to_file,
 };
 use super::token_graph::compute_graph_from_csv;
 use super::types::{PathMap, Pool, TradePath};
-use super::Result;
+use super::{Result, Context};
 
 pub fn update_path_data<P: AsRef<Path>>(
     path: P,
@@ -18,17 +18,17 @@ pub fn update_path_data<P: AsRef<Path>>(
     let graph = compute_graph_from_csv(path, required_tokens)?;
     for (i, token) in required_tokens.iter().enumerate() {
         let start_node = token.to_string().clone();
-        let mut target_nodes: HashSet<String> = vec![].into_iter().collect();
+        let mut target_nodes: HashSet<String> = HashSet::new();
         for int_token in required_tokens {
             if int_token != token {
                 target_nodes.insert(int_token.to_string());
             }
         }
         // Find all paths
-        let paths = graph.find_all_paths(&start_node, target_nodes);
+        let paths = graph.find_all_paths(&start_node, &target_nodes);
 
         // Write results to file using indexer
-        write_paths_to_file(&paths, &output_paths[i])?;
+        write_paths_to_file(&paths, &output_paths[i]).context("Error writing path files to disk".to_string())?;
     }
     Ok(())
 }
@@ -43,11 +43,10 @@ pub fn get_all_paths<P: AsRef<Path>>(file_paths: &[P]) -> Result<PathMap> {
         for (key, mut paths_vec) in paths {
             combined_map
                 .entry(key)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .append(&mut paths_vec);
         }
     }
-
     Ok(combined_map)
 }
 
@@ -57,7 +56,7 @@ pub fn update_pathmap<P: AsRef<Path>>(
 ) -> Result<()> {
     let path_map = get_all_paths(output_paths)?;
 
-    write_pathmap_on_disk(pathmap_file, &path_map)?;
+    write_pathmap_on_disk(pathmap_file, &path_map).context("Error writing pathmap files on disk".to_string())?;
     Ok(())
 }
 

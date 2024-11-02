@@ -1,25 +1,23 @@
 use super::constants::{GET_RESERVES_SELECTOR, SCALE};
-use super::types::{Pool, PoolMap, TradePath};
+use super::types::{Pool, PoolMap};
+use anyhow::Context;
 use num_bigint::BigUint;
-use num_traits::{CheckedSub, ConstZero, One, Zero};
+use num_traits::Zero;
 use starknet::{
     core::types::{
-        BlockId, BlockTag, EventFilter, Felt, FunctionCall, MaybePendingBlockWithTxHashes,
+        BlockId, Felt, FunctionCall,
     },
     providers::{
         jsonrpc::{HttpTransport, JsonRpcClient},
         Provider, Url,
     },
 };
-use std::error::Error;
-use std::fs;
-use std::io::{self, BufRead, BufReader};
-use std::ops::Mul;
+use std::io::{self, BufRead};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
-use std::{collections::HashMap, fs::File};
-use super::indexer::pool_indexer::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
+use std::fs::File;
+use super::indexer::pool::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
 use super::Result;
 
 fn create_pools_from_csv<P: AsRef<Path>>(
@@ -38,9 +36,9 @@ fn create_pools_from_csv<P: AsRef<Path>>(
             && required_tokens.contains(&parts[1])
             && required_tokens.contains(&parts[2])
         {
-            let (token0, token1) = if BigUint::parse_bytes(&parts[1].as_str()[2..].as_bytes(), 16)
+            let (token0, token1) = if BigUint::parse_bytes(parts[1].as_str()[2..].as_bytes(), 16)
                 .unwrap()
-                < BigUint::parse_bytes(&parts[2].as_str()[2..].as_bytes(), 16).unwrap()
+                < BigUint::parse_bytes(parts[2].as_str()[2..].as_bytes(), 16).unwrap()
             {
                 (parts[1].clone(), parts[2].clone())
             } else {
@@ -69,30 +67,30 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     poolmap_file_path: P,
     required_tokens: &[String],
 ) -> Result<()> {
-    let pool_map = get_latest_pool_data(rpc_url, token_pair_file_path, required_tokens).await?;
+    let (pool_map,_) = get_latest_pool_data(rpc_url, token_pair_file_path, required_tokens).await.context("Error getting latest pool data while indexing poolmap data".to_string())?;
 
-    write_poolmap_data_on_disk(poolmap_file_path, &pool_map);
+    write_poolmap_data_on_disk(poolmap_file_path, &pool_map).context("Error writing poolmap data on disk".to_string())?;
     Ok(())
 }
 
 pub async fn get_indexed_pool_data<P: AsRef<Path>>(
     poolmap_file_path: P,
-) -> Result<PoolMap> {
+) -> Result<(PoolMap, u64)> {
     
     let pool_map = read_poolmap_data_from_disk(poolmap_file_path)?;
-    for (pool_key, pool) in pool_map.iter() {
-        println!("Pool Key {:?}", pool_key);
-        println!("Pool {:?}", pool);
+    let mut block_number = 0;
+    if let Some((_, pool)) = pool_map.iter().next() {
+        block_number = pool.block_number;
     }
-    Ok(pool_map)
+    Ok((pool_map, block_number))
 }
 
 pub async fn get_latest_pool_data<P: AsRef<Path>>(
     rpc_url: &str,
     token_pair_file_path: P,
     required_tokens: &[String],
-) -> Result<PoolMap> {
-    let mut pool_map = create_pools_from_csv(token_pair_file_path, required_tokens).unwrap();
+) -> Result<(PoolMap, u64)> {
+    let pool_map = create_pools_from_csv(token_pair_file_path, required_tokens).unwrap();
     let pool_entries: Vec<((String, String), Pool)> = pool_map
         .iter()
         .map(|(pair, pool)| (pair.clone(), pool.clone()))
@@ -103,10 +101,10 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
     let mut threads = vec![];
     let rpc_url = rpc_url.to_string();
     for (pair, pool) in pool_entries {
-        let mut shared_pool_map = arc_pool_map.clone();
+        let shared_pool_map = arc_pool_map.clone();
         let rpc_url = rpc_url.clone();
         let worker_thread = tokio::spawn(async move {
-            let pool_key = if BigUint::parse_bytes(&pair.0.as_str()[2..].as_bytes(), 16).unwrap()
+            let pool_key = if BigUint::parse_bytes(pair.0.as_str()[2..].as_bytes(), 16).unwrap()
                 < BigUint::parse_bytes(pair.1.as_str()[2..].as_bytes(), 16).unwrap()
             {
                 (pair.0.clone(), pair.1.clone())
@@ -116,7 +114,7 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
 
             let provider =
                 JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url.as_str()).unwrap()));
-            let mut calldata = vec![];
+            let calldata = vec![];
             //let mut str_felts = vec![];
             let mut byte_felts = vec![];
 
@@ -164,7 +162,7 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
         thread.await.unwrap();
     }
     let output_pool_map = arc_pool_map.lock().unwrap().clone();
-    Ok(output_pool_map)
+    Ok((output_pool_map, block_number))
 }
 
 impl Pool {
@@ -223,14 +221,10 @@ impl Pool {
         //}
 
         // Calculate final amount in and round up
-        let amount_in = (&numerator + &denominator - BigUint::from(1u32)) / denominator;
-
-        amount_in
+        (&numerator + &denominator - BigUint::from(1u32)) / denominator
     }
 
     pub fn to_f64(value: &BigUint) -> f64 {
-        let value_scaled = value.mul(BigUint::from(1_000_000u32)); // Additional scaling for precision
-                                                                   //let scaling_factor_scaled = scaling_factor.mul(BigUint::from(1_000_000u32));
 
         let value_str = value.to_string();
         //let scaling_str = scaling_factor.to_string();
@@ -249,9 +243,6 @@ impl Pool {
 
         // Convert the float to a scaled integer to maintain precision
         let scaled_value = (value * SCALE) as u64;
-        let base = BigUint::from(scaled_value);
-
-        // Scale back down and multiply by scaling factor
-        return base;
+        BigUint::from(scaled_value)
     }
 }

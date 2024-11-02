@@ -1,4 +1,9 @@
-use super::types::Graph;
+use anyhow::Context;
+
+use super::{
+    types::Graph,
+    Result
+};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -7,9 +12,9 @@ use std::path::Path;
 pub fn compute_graph_from_csv<P: AsRef<Path>>(
     path: P,
     required_tokens: &[String],
-) -> io::Result<Graph> {
+) -> Result<Graph> {
     let mut graph = Graph::new();
-    let file = File::open(path)?;
+    let file = File::open(path).context("Couldn't open file while trying to compute graph".to_string())?;
     let reader = io::BufReader::new(file);
 
     for line in reader.lines() {
@@ -40,20 +45,20 @@ impl Graph {
         // Add from -> to
         self.edges
             .entry(from.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(to.to_string());
 
         // Add to -> from (since undirected)
         self.edges
             .entry(to.to_string())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(from.to_string());
     }
 
     pub fn find_all_paths(
         &self,
         start: &str,
-        target_nodes: HashSet<String>,
+        target_nodes: &HashSet<String>,
     ) -> HashMap<String, Vec<Vec<String>>> {
         let mut all_paths: HashMap<String, Vec<Vec<String>>> = HashMap::new();
         let mut visited = HashSet::new();
@@ -70,7 +75,7 @@ impl Graph {
             &mut visited,
             &mut current_path,
             &mut all_paths,
-            &target_nodes,
+            target_nodes,
         );
 
         all_paths

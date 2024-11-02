@@ -1,8 +1,7 @@
 use super::constants::SCALE;
 use super::types::{Pool, PoolMap, TradePath};
 use num_bigint::BigUint;
-use num_traits::{CheckedSub, ConstZero, One, Zero};
-use std::cmp::Ordering;
+use num_traits::Zero;
 
 pub fn optimize_amount_out(
     required_trade_paths: Vec<TradePath>,
@@ -15,25 +14,6 @@ pub fn optimize_amount_out(
     sorted_required_paths.sort_by(|a, b| a.tokens.len().cmp(&b.tokens.len()));
     let optimizer = Optimizer::new(sorted_required_paths, pool_map, total_amount.clone());
     let (splits, total_output, _) = optimizer.optimize();
-
-    println!("\nOptimization Results:");
-    println!("Total Input: {}", total_amount);
-    println!("Total Output: {}", total_output);
-
-    let scaling_factor = BigUint::from(SCALE as u64);
-    let mut path_splits: Vec<String> = vec![];
-    println!("\nOptimal splits:");
-    for (i, split) in splits.iter().enumerate() {
-        let percentage = split * BigUint::from(100u32) / &scaling_factor;
-        println!("Path {}: {}%", i, percentage);
-        if split > &BigUint::ZERO {
-            path_splits.push(format!(
-                "Path:{:?} Split %:{:.4}",
-                required_trade_paths[i].tokens,
-                Pool::to_f64(split)
-            ))
-        }
-    }
 
     (splits, total_output)
 }
@@ -48,26 +28,7 @@ pub fn optimize_amount_in(
 
     sorted_required_paths.sort_by(|a, b| a.tokens.len().cmp(&b.tokens.len()));
     let optimizer = Optimizer::new(sorted_required_paths, pool_map, total_amount.clone());
-    let (splits, total_input, pool_map) = optimizer.optimize_input();
-
-    println!("\nOptimization Results:");
-    println!("Total Input: {}", total_input);
-    println!("Total Output: {}", total_amount);
-
-    let scaling_factor = BigUint::from(SCALE as u64);
-    let mut path_splits: Vec<String> = vec![];
-    println!("\nOptimal splits:");
-    for (i, split) in splits.iter().enumerate() {
-        let percentage = split * BigUint::from(100u32) / &scaling_factor;
-        println!("Path {}: {}%", i, percentage);
-        if split > &BigUint::ZERO {
-            path_splits.push(format!(
-                "Path:{:?} Split %:{:.4}",
-                required_trade_paths[i].tokens,
-                Pool::to_f64(split)
-            ))
-        }
-    }
+    let (splits, total_input, _) = optimizer.optimize_input();
 
     (splits, total_input)
 }
@@ -77,17 +38,14 @@ struct Optimizer {
     paths: Vec<TradePath>,
     pools: PoolMap,
     total_amount: BigUint,
-    scaling_factor: BigUint,
 }
 
 impl Optimizer {
     fn new(paths: Vec<TradePath>, pools: PoolMap, total_amount: BigUint) -> Self {
-        let scaling_factor = BigUint::from(SCALE as u64);
         Self {
             paths,
             pools,
             total_amount,
-            scaling_factor,
         }
     }
 
@@ -103,7 +61,7 @@ impl Optimizer {
             }
 
             let split_biguint = Pool::from_f64(split);
-            let amount_in = &self.total_amount * &split_biguint / Pool::from_f64(1 as f64);
+            let amount_in = &self.total_amount * &split_biguint / Pool::from_f64(1_f64);
 
             if amount_in > BigUint::zero() {
                 let amount_out = self.paths[i].get_amount_out(&amount_in, &mut temp_pools);
@@ -111,12 +69,12 @@ impl Optimizer {
                 let mut hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
 
                 let amount_out =
-                    (amount_out * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1 as f64);
+                    (amount_out * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1_f64);
                 total_output += amount_out;
             }
         }
         let gas_penalty = 1.0 - (0.0001 * (active_splits as f64 - 1.0));
-        total_output = (total_output * Pool::from_f64(gas_penalty)) / Pool::from_f64(1 as f64);
+        total_output = (total_output * Pool::from_f64(gas_penalty)) / Pool::from_f64(1_f64);
 
         Pool::to_f64(&(total_output * BigUint::from(SCALE as u64)))
     }
@@ -172,36 +130,6 @@ impl Optimizer {
         }
 
         splits
-    }
-
-    fn project_onto_simplex_1(&self, mut v: Vec<f64>) -> Vec<f64> {
-        //let mut v = v.to_vec();
-        let n = v.len();
-
-        // Sort the vector in descending order
-        v.sort_by(|a, b| b.partial_cmp(a).unwrap_or(Ordering::Equal));
-
-        // Initialize the threshold
-        let mut theta = 0.0;
-        let mut sum = 0.0;
-        for i in 0..n {
-            sum += v[i];
-            if sum > 1.0 {
-                theta = (sum - 1.0) / (i + 1) as f64;
-                break;
-            }
-        }
-
-        // Project the vector onto the simplex
-        let mut w = vec![0.0; n];
-        for i in 0..n {
-            w[i] = v[i] - theta;
-            if w[i] < 0.0 {
-                w[i] = 0.0;
-            }
-        }
-
-        w
     }
 
     fn calculate_gradient(&self, splits: &[f64]) -> Vec<f64> {
@@ -273,26 +201,7 @@ impl Optimizer {
 
         grad
     }
-    // Calculate gradient
-    fn calculate_gradient_1(&self, splits: &[f64]) -> Vec<f64> {
-        let n = splits.len();
-        let mut grad = vec![0.0; n];
-        let h = 1e-7;
-
-        let base_output = self.calculate_output(splits);
-
-        for i in 0..n {
-            let mut splits_plus_h = splits.to_vec();
-            splits_plus_h[i] += h;
-            splits_plus_h = self.project_onto_simplex(splits_plus_h);
-
-            let output_plus_h = self.calculate_output(&splits_plus_h);
-            grad[i] = (output_plus_h - base_output) / h;
-        }
-
-        grad
-    }
-
+    
     // Custom gradient descent optimization
     fn optimize(&self) -> (Vec<BigUint>, BigUint, PoolMap) {
         let n_paths = self.paths.len();
@@ -304,6 +213,7 @@ impl Optimizer {
             if path.tokens.len() == 2 {
                 splits[i] = 1.0;
                 found_direct_path = true;
+                break;
             }
         }
 
