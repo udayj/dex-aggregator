@@ -1,7 +1,5 @@
-use super::constants::GET_RESERVES_SELECTOR;
-use super::indexer::pool_indexer::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
+use super::constants::{GET_RESERVES_SELECTOR, SCALE};
 use super::types::{Pool, PoolMap, TradePath};
-use super::Result;
 use num_bigint::BigUint;
 use num_traits::{CheckedSub, ConstZero, One, Zero};
 use starknet::{
@@ -21,9 +19,13 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, fs::File};
-const SCALE: f64 = 1000000 as f64;
+use super::indexer::pool_indexer::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
+use super::Result;
 
-fn create_pools_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) -> Result<PoolMap> {
+fn create_pools_from_csv<P: AsRef<Path>>(
+    path: P,
+    required_tokens: &[String],
+) -> Result<PoolMap> {
     let mut pool_map = PoolMap::new();
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -73,7 +75,10 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     Ok(())
 }
 
-pub async fn get_indexed_pool_data<P: AsRef<Path>>(poolmap_file_path: P) -> Result<PoolMap> {
+pub async fn get_indexed_pool_data<P: AsRef<Path>>(
+    poolmap_file_path: P,
+) -> Result<PoolMap> {
+    
     let pool_map = read_poolmap_data_from_disk(poolmap_file_path)?;
     for (pool_key, pool) in pool_map.iter() {
         println!("Pool Key {:?}", pool_key);
