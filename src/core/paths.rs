@@ -1,24 +1,20 @@
+use num_bigint::BigUint;
+use num_traits::{CheckedSub, Zero};
+use std::collections::{HashMap, HashSet};
+use std::path::Path;
+use std::str::FromStr;
 use super::indexer::path_indexer::{
     read_pathmap_from_disk, read_token_paths, write_pathmap_on_disk, write_paths_to_file,
 };
 use super::token_graph::compute_graph_from_csv;
-use super::types::{PathKey, PathMap, Pool, TradePath};
+use super::types::{PathMap, Pool, TradePath};
 use super::Result;
-use num_bigint::BigUint;
-use num_traits::{CheckedSub, Zero};
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::error::Error;
-use std::fs;
-use std::io::{self, BufRead, BufReader, Write};
-use std::path::Path;
-use std::str::FromStr;
 
 pub fn update_path_data<P: AsRef<Path>>(
     path: P,
     required_tokens: &Vec<String>,
     output_paths: &[P],
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let graph = compute_graph_from_csv(path, required_tokens)?;
     for (i, token) in required_tokens.iter().enumerate() {
         let start_node = token.to_string().clone();
@@ -37,7 +33,6 @@ pub fn update_path_data<P: AsRef<Path>>(
     Ok(())
 }
 
-// Function to process multiple token files
 pub fn get_all_paths<P: AsRef<Path>>(file_paths: &[P]) -> Result<PathMap> {
     let mut combined_map: PathMap = PathMap::new();
 
@@ -59,7 +54,7 @@ pub fn get_all_paths<P: AsRef<Path>>(file_paths: &[P]) -> Result<PathMap> {
 pub fn update_pathmap<P: AsRef<Path>>(
     pathmap_file: P,
     output_paths: &[P],
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let path_map = get_all_paths(output_paths)?;
 
     write_pathmap_on_disk(pathmap_file, &path_map)?;
@@ -70,7 +65,7 @@ pub fn get_paths_between<P: AsRef<Path>>(
     pathmap_file: P,
     token_in: String,
     token_out: String,
-) -> Result<Vec<TradePath>, Box<dyn Error>> {
+) -> Result<Vec<TradePath>> {
     let path_map = read_pathmap_from_disk(pathmap_file)?;
     let dummy_value = vec![vec![]];
     let required_paths = path_map.get(&(token_in, token_out)).unwrap_or(&dummy_value);
@@ -83,12 +78,6 @@ pub fn get_paths_between<P: AsRef<Path>>(
 }
 
 impl TradePath {
-    fn new(path_str: &str) -> Self {
-        TradePath {
-            tokens: path_str.split_whitespace().map(String::from).collect(),
-        }
-    }
-
     pub fn get_amount_out(
         &self,
         amount_in: &BigUint,
@@ -102,8 +91,8 @@ impl TradePath {
             let token_out = &token_pair[1];
 
             // Create pool key (always order tokens lexicographically)
-            let pool_key = if BigUint::parse_bytes(&token_in.as_str()[2..].as_bytes(), 16).unwrap()
-                < BigUint::parse_bytes(&token_out.as_str()[2..].as_bytes(), 16).unwrap()
+            let pool_key = if BigUint::parse_bytes(token_in.as_str()[2..].as_bytes(), 16).unwrap()
+                < BigUint::parse_bytes(token_out.as_str()[2..].as_bytes(), 16).unwrap()
             {
                 (token_in.clone(), token_out.clone())
             } else {
@@ -172,8 +161,8 @@ impl TradePath {
             let token_in = &token_pair[1];
 
             // Create pool key (always order tokens lexicographically)
-            let pool_key = if BigUint::parse_bytes(&token_in.as_str()[2..].as_bytes(), 16).unwrap()
-                < BigUint::parse_bytes(&token_out.as_str()[2..].as_bytes(), 16).unwrap()
+            let pool_key = if BigUint::parse_bytes(token_in.as_str()[2..].as_bytes(), 16).unwrap()
+                < BigUint::parse_bytes(token_out.as_str()[2..].as_bytes(), 16).unwrap()
             {
                 (token_in.clone(), token_out.clone())
             } else {
@@ -240,7 +229,6 @@ impl TradePath {
                 return BigUint::zero(); // Pool not found
             }
         }
-
         current_amount
     }
 }

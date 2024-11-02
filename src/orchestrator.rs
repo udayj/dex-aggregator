@@ -7,7 +7,6 @@ use super::types::{DexConfig, QuoteRequest, QuoteResponse, ResponsePool, Route};
 use anyhow::{anyhow, Result};
 use num_bigint::BigUint;
 use std::collections::HashMap;
-use std::error::Error;
 use std::fs;
 use std::path::Path;
 
@@ -28,7 +27,7 @@ pub fn validate_request(config: &DexConfig, request: &QuoteRequest) -> Result<()
     Ok(())
 }
 
-pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<()> {
     if !Path::new(config.working_dir.as_str()).exists() {
         fs::create_dir(config.working_dir.clone())?;
     }
@@ -47,9 +46,9 @@ pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub async fn index_and_save_path_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_path_data(config: &DexConfig) -> Result<()> {
     if !Path::new(config.working_dir.as_str()).exists() {
-        return Err("Token Pair data file not found".into());
+        return Err(anyhow!("Token Pair data file not found"));
     }
     let dir = Path::new(config.working_dir.as_str());
     let token_pair_file_path = dir.join(config.token_pair_file.clone());
@@ -72,9 +71,9 @@ pub async fn index_and_save_path_data(config: &DexConfig) -> Result<(), Box<dyn 
     Ok(())
 }
 
-pub async fn index_and_save_pool_data(config: &DexConfig) -> Result<(), Box<dyn Error>> {
+pub async fn index_and_save_pool_data(config: &DexConfig) -> Result<()> {
     if !Path::new(config.working_dir.as_str()).exists() {
-        return Err("Token Pair data file not found".into());
+        return Err(anyhow!("Token Pair data file not found"));
     }
 
     let dir = Path::new(config.working_dir.as_str());

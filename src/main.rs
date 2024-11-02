@@ -65,9 +65,6 @@ impl IntoResponse for ApiError {
         schemas(Route),
         schemas(ResponsePool)
     ),
-    tags(
-        (name = "quotes", description = "Trade quotes for a token pair"),
-    )
 )]
 struct ApiDoc;
 
@@ -75,8 +72,10 @@ struct ApiDoc;
 get,
 path = "/quotes",
 params(
-    ("sellTokenAddress" = String, Query, description = "Address of token being sold", example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8"),
-    ("buyTokenAddress" = String, Query, description = "Address of token being bought", example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"),
+    ("sellTokenAddress" = String, Query, description = "Address of token being sold", 
+    example = "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8"),
+    ("buyTokenAddress" = String, Query, description = "Address of token being bought", 
+    example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"),
     ("sellAmount" = Option<String>, Query, description = "Amount of tokens being sold in decimal format (must be present if buyAmount not present) - if both present sellAmount is considered", example = "10000000000"),
     ("buyAmount" = Option<String>, Query, description = "Amount of tokens being bought in decimal format (must be present if sellAmount not present)", example = "210690000000000"),
     ("getLatest" = Option<bool>, Query, 
@@ -88,16 +87,16 @@ responses(
     (status = 400, description = "Bad Request"),
     (status = 500, description = "Internal Server Error")
 ),
-tag = "quotes"
+tag = "quotes - get trade quotes for token pairs",
 )]
 async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<QuoteRequest>,
 ) -> Result<Json<QuoteResponse>, ApiError> {
+
     if let Err(e) = validate_request(state.config.as_ref(), &params) {
         return Err(ApiError::BadRequest(format!("{}", e)));
     }
-
     match get_aggregator_quotes(state.config.as_ref(), params.clone()).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => Err(ApiError::Internal(format!("Failed to get quotes: {}", e))),
@@ -158,7 +157,7 @@ async fn index_pool_data(State(state): State<DexConfigState>) -> Result<StatusCo
 // API handlers
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Create API documentation
+    
     let openapi = ApiDoc::openapi();
     let config_path = PathBuf::from("dex_config.toml");
     let config_state = DexConfigState {
@@ -195,24 +194,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 // block number - "latest"/block_number based on pool data
 // chain id
 // routes [(percent:, (pair address, token in, token out, token in symbol, token out symbol)]
-
-// post endpoints - update pair data, store paths on disk & path map on disk, update latest pool data for all pools
-// all the above should persist data in storage, and other read functions should read data from storage
-// get_paths_between should read pathmap from storage
-// get_pooldata - should simply read from storage and return
-// pair and path data should be updated together since path data changes only if pair data changes
-// pool data can be updated independently
-// all data files in separate working directory
-
-// CONCERNS
-// what happens if pair data is updated at the time that the pair data is being read by some other function
-
-// Multi thread pair + pool
-// config
-// error handling
-// references, copy trait
-// post calls
-// json output
-// db abstraction
-// generics
-// read api key from env

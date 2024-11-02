@@ -93,7 +93,7 @@ pub async fn index_pair_data(rpc_url: &str, pair_file: &str, token_pair_file: &s
                 let provider =
                     JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url.as_str()).unwrap()));
                 let calldata = vec![];
-                //println!("{}",result[pair].to_hex_string());
+                
                 let token0 = provider
                     .call(
                         FunctionCall {
