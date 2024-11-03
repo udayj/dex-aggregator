@@ -49,10 +49,7 @@ pub fn read_token_paths<P: AsRef<Path>>(file_path: P) -> Result<PathMap> {
         let path_key = (start_token.clone(), end_token.clone());
 
         // Add the path to the map
-        path_map
-            .entry(path_key)
-            .or_default()
-            .push(tokens);
+        path_map.entry(path_key).or_default().push(tokens);
     }
 
     Ok(path_map)
@@ -91,7 +88,6 @@ struct PathEntry {
 }
 
 impl PathList {
-
     // Convert from HashMap to the serializable structure
     fn from_hash_map(map: &HashMap<(String, String), Vec<Vec<String>>>) -> Self {
         let paths = map

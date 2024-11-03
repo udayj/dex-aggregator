@@ -1,9 +1,6 @@
 use anyhow::Context;
 
-use super::{
-    types::Graph,
-    Result
-};
+use super::{types::Graph, Result};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead};
@@ -14,7 +11,8 @@ pub fn compute_graph_from_csv<P: AsRef<Path>>(
     required_tokens: &[String],
 ) -> Result<Graph> {
     let mut graph = Graph::new();
-    let file = File::open(path).context("Couldn't open file while trying to compute graph".to_string())?;
+    let file =
+        File::open(path).context("Couldn't open file while trying to compute graph".to_string())?;
     let reader = io::BufReader::new(file);
 
     for line in reader.lines() {

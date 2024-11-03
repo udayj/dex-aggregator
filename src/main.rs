@@ -53,18 +53,13 @@ impl IntoResponse for ApiError {
 // Generate the OpenAPI schema
 #[derive(OpenApi)]
 #[openapi(
-    paths(
-        get_quotes,
-        index_pair_data,
-        index_path_data,
-        index_pool_data
-    ),
+    paths(get_quotes, index_pair_data, index_path_data, index_pool_data),
     components(
         schemas(QuoteRequest),
         schemas(QuoteResponse),
         schemas(Route),
         schemas(ResponsePool)
-    ),
+    )
 )]
 struct ApiDoc;
 
@@ -93,7 +88,6 @@ async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<QuoteRequest>,
 ) -> Result<Json<QuoteResponse>, ApiError> {
-
     if let Err(e) = validate_request(state.config.as_ref(), &params) {
         return Err(ApiError::BadRequest(format!("{}", e)));
     }
@@ -157,7 +151,6 @@ async fn index_pool_data(State(state): State<DexConfigState>) -> Result<StatusCo
 // API handlers
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    
     let openapi = ApiDoc::openapi();
     let config_path = PathBuf::from("dex_config.toml");
     let config_state = DexConfigState {
@@ -196,4 +189,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
 // routes [(percent:, (pair address, token in, token out, token in symbol, token out symbol)]
 
 // combine routes
-

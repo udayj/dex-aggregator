@@ -1,3 +1,5 @@
+use crate::core::constants::INFINITE;
+
 use super::core::optimization::{optimize_amount_in, optimize_amount_out};
 use super::core::pair::index_latest_pair_data;
 use super::core::path::{get_paths_between, update_path_data, update_pathmap};
@@ -122,8 +124,7 @@ pub async fn get_aggregator_quotes(
     } else {
         let dir = Path::new(config.working_dir.as_str());
         let poolmap_file_path = dir.join(config.poolmap_file.clone());
-        get_indexed_pool_data(poolmap_file_path)
-            .map_err(|e| anyhow!(format!("{}", e)))?
+        get_indexed_pool_data(poolmap_file_path).map_err(|e| anyhow!(format!("{}", e)))?
     };
 
     if params.sellAmount.is_some() {
@@ -163,7 +164,7 @@ pub async fn get_aggregator_quotes(
             pool_map.clone(),
             BigUint::from(params.buyAmount.clone().unwrap().parse::<u128>().unwrap()),
         );
-        println!("Total Amount In:{}\n Splits: {:?}\n", total_amount, splits);
+        //println!("Total Amount In:{}\n Splits: {:?}\n", total_amount, splits);
         let routes: Vec<Route> = splits
             .iter()
             .zip(required_trade_paths.iter())
@@ -178,11 +179,15 @@ pub async fn get_aggregator_quotes(
                 }
             })
             .collect();
-
+        let total_amount = if total_amount == INFINITE() {
+            "INFINITE".to_string()
+        } else {
+            total_amount.to_string()
+        };
         Ok(QuoteResponse {
             sellTokenAddress: params.sellTokenAddress.clone(),
             buyTokenAddress: params.buyTokenAddress,
-            sellAmount: total_amount.to_string(),
+            sellAmount: total_amount,
             buyAmount: params.buyAmount.unwrap(),
             blockNumber: block_number,
             chainId: config.chain_id.clone(),

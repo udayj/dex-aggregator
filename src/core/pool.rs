@@ -1,29 +1,24 @@
 use super::constants::{GET_RESERVES_SELECTOR, SCALE};
+use super::indexer::pool::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
 use super::types::{Pool, PoolMap};
+use super::Result;
 use anyhow::Context;
 use num_bigint::BigUint;
 use num_traits::Zero;
 use starknet::{
-    core::types::{
-        BlockId, Felt, FunctionCall,
-    },
+    core::types::{BlockId, Felt, FunctionCall},
     providers::{
         jsonrpc::{HttpTransport, JsonRpcClient},
         Provider, Url,
     },
 };
+use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
-use std::fs::File;
-use super::indexer::pool::{read_poolmap_data_from_disk, write_poolmap_data_on_disk};
-use super::Result;
 
-fn create_pools_from_csv<P: AsRef<Path>>(
-    path: P,
-    required_tokens: &[String],
-) -> Result<PoolMap> {
+fn create_pools_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) -> Result<PoolMap> {
     let mut pool_map = PoolMap::new();
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -67,16 +62,16 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     poolmap_file_path: P,
     required_tokens: &[String],
 ) -> Result<()> {
-    let (pool_map,_) = get_latest_pool_data(rpc_url, token_pair_file_path, required_tokens).await.context("Error getting latest pool data while indexing poolmap data".to_string())?;
+    let (pool_map, _) = get_latest_pool_data(rpc_url, token_pair_file_path, required_tokens)
+        .await
+        .context("Error getting latest pool data while indexing poolmap data".to_string())?;
 
-    write_poolmap_data_on_disk(poolmap_file_path, &pool_map).context("Error writing poolmap data on disk".to_string())?;
+    write_poolmap_data_on_disk(poolmap_file_path, &pool_map)
+        .context("Error writing poolmap data on disk".to_string())?;
     Ok(())
 }
 
-pub fn get_indexed_pool_data<P: AsRef<Path>>(
-    poolmap_file_path: P,
-) -> Result<(PoolMap, u64)> {
-    
+pub fn get_indexed_pool_data<P: AsRef<Path>>(poolmap_file_path: P) -> Result<(PoolMap, u64)> {
     let pool_map = read_poolmap_data_from_disk(poolmap_file_path)?;
     let mut block_number = 0;
     if let Some((_, pool)) = pool_map.iter().next() {
@@ -194,23 +189,22 @@ impl Pool {
         amount_out: &BigUint,
         reserve0: &BigUint,
         reserve1: &BigUint,
-    ) -> BigUint {
+    ) -> Option<BigUint> {
         // Constants for fee calculation
         let fee_numerator = BigUint::from_str("3").unwrap(); // 0.3%
         let fee_denominator = BigUint::from_str("1000").unwrap(); // Base for percentage
 
         if amount_out >= reserve1 {
-            return BigUint::from_str("1000000000000000000000000000").unwrap();
+            return None;
         }
         let numerator = amount_out * reserve0 * &fee_denominator;
         let denominator = (reserve1 - amount_out) * (&fee_denominator - &fee_numerator);
 
         // Calculate final amount in and round up
-        (&numerator + &denominator - BigUint::from(1u32)) / denominator
+        Some((&numerator + &denominator - BigUint::from(1u32)) / denominator)
     }
 
     pub fn to_f64(value: &BigUint) -> f64 {
-
         let value_str = value.to_string();
         //let scaling_str = scaling_factor.to_string();
 

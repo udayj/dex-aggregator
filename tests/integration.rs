@@ -1,29 +1,23 @@
+use csv::Writer;
+use dex_aggregator::core::constants::INFINITE;
 use dex_aggregator::core::optimization::{optimize_amount_in, optimize_amount_out};
-use dex_aggregator::core::pair::index_latest_pair_data;
-use dex_aggregator::core::path::{get_paths_between, update_path_data, update_pathmap};
-use dex_aggregator::core::pool::{get_indexed_pool_data, get_latest_pool_data, index_latest_poolmap_data};
-use dex_aggregator::core::types::{Pool, TradePath};
-use dex_aggregator::types::{DexConfig, QuoteRequest, QuoteResponse, ResponsePool, Route};
-use anyhow::{anyhow, Result};
+use dex_aggregator::core::path::get_paths_between;
+use dex_aggregator::core::pool::get_indexed_pool_data;
+use dex_aggregator::types::DexConfig;
 use num_bigint::BigUint;
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-use dex_aggregator::config;
-use csv::Writer;
 
 #[test]
-fn get_quotes_amount_in() {
-
-    let config = DexConfig::default();
+fn get_quotes_given_amount_in() {
+    let mut config = DexConfig::default();
+    config.working_dir = "tests/working_dir".to_string();
     let dir = Path::new(config.working_dir.as_str());
     let pathmap_file_path = dir.join(config.pathmap_file.clone());
 
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(config.working_dir.as_str());
-    println!("{:?}", dir.as_os_str());
-    let token_pair_file_path = dir.join(config.token_pair_file.clone());
-
-    let unique_token_pairs = get_unique_token_pairs(&config.supported_tokens);
+   
     let symbol_list: Vec<(&str, &str)> = vec![
         (
             "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -88,37 +82,39 @@ fn get_quotes_amount_in() {
         .map(|token| (token.0.to_string(), token.1.to_string()))
         .collect();
 
-    let output_file = dir.join("amount_out.csv");
+    let output_file = dir.join("given_amount_in_test_runs.csv");
     let file = File::create(output_file).unwrap();
     let mut wrt = Writer::from_writer(file);
-    wrt.write_record(&["TOKEN IN", "TOKEN OUT", "AMOUNT IN", "AMOUNT OUT"]);
+    let _ = wrt.write_record(["TOKEN IN", "TOKEN OUT", "AMOUNT IN", "AMOUNT OUT"]);
     let all_token_pairs = get_all_token_pairs(&config.supported_tokens);
     for pair in all_token_pairs.iter() {
-        if (pair.0.clone() == pair.1.clone()) {
+        if pair.0.clone() == pair.1.clone() {
             continue;
         }
-            
+
         let amount_in = amount_in_map.get(&pair.0).unwrap();
-        let required_trade_paths = get_paths_between(
-        pathmap_file_path.clone(),
-        pair.0.clone(),
-        pair.1.clone(),
-    ).unwrap();
+        let required_trade_paths =
+            get_paths_between(pathmap_file_path.clone(), pair.0.clone(), pair.1.clone()).unwrap();
 
-    let dir = Path::new(config.working_dir.as_str());
+        let dir = Path::new(config.working_dir.as_str());
         let poolmap_file_path = dir.join(config.poolmap_file.clone());
-    let (pool_map,_) = get_indexed_pool_data(poolmap_file_path).unwrap();
+        let (pool_map, _) = get_indexed_pool_data(poolmap_file_path).unwrap();
 
-    let (splits, total_amount) = optimize_amount_out(
+        let (_, total_amount) = optimize_amount_out(
             required_trade_paths.clone(),
             pool_map.clone(),
             BigUint::from(amount_in.parse::<u128>().unwrap()),
         );
 
-    wrt.write_record(&[symbol_map.get(&pair.0).unwrap(), &symbol_map.get(&pair.1).unwrap(), &amount_in, &total_amount.to_string()] );
+        let _ = wrt.write_record([
+            symbol_map.get(&pair.0).unwrap(),
+            symbol_map.get(&pair.1).unwrap(),
+            amount_in,
+            &total_amount.to_string(),
+        ]);
     }
 
-    wrt.flush();
+    let _ = wrt.flush();
     /*let required_trade_paths = get_paths_between(
         pathmap_file_path,
         params.sellTokenAddress.clone(),
@@ -128,8 +124,7 @@ fn get_quotes_amount_in() {
 }
 
 #[test]
-fn get_quotes_amount_out() {
-
+fn get_quotes_given_amount_out() {
     let mut config = DexConfig::default();
     config.working_dir = "tests/working_dir".to_string();
     let dir = Path::new(config.working_dir.as_str());
@@ -137,9 +132,7 @@ fn get_quotes_amount_out() {
 
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(config.working_dir.as_str());
     println!("{:?}", dir.as_os_str());
-    let token_pair_file_path = dir.join(config.token_pair_file.clone());
-
-    let unique_token_pairs = get_unique_token_pairs(&config.supported_tokens);
+    
     let symbol_list: Vec<(&str, &str)> = vec![
         (
             "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -204,37 +197,50 @@ fn get_quotes_amount_out() {
         .map(|token| (token.0.to_string(), token.1.to_string()))
         .collect();
 
-    let output_file = dir.join("amount_in.csv");
+    let output_file = dir.join("given_amount_out_test_runs.csv");
     let file = File::create(output_file).unwrap();
     let mut wrt = Writer::from_writer(file);
-    wrt.write_record(&["TOKEN IN", "TOKEN OUT", "AMOUNT OUT", "AMOUNT IN"]);
+    let _ = wrt.write_record(["TOKEN IN", "TOKEN OUT", "AMOUNT OUT", "AMOUNT IN"]);
     let all_token_pairs = get_all_token_pairs(&config.supported_tokens);
     for pair in all_token_pairs.iter() {
-        if (pair.0.clone() == pair.1.clone()) {
+        if pair.0.clone() == pair.1.clone() {
             continue;
         }
-            
+
         let amount_out = amount_out_map.get(&pair.1).unwrap();
-        let required_trade_paths = get_paths_between(
-        pathmap_file_path.clone(),
-        pair.0.clone(),
-        pair.1.clone(),
-    ).unwrap();
+        let required_trade_paths =
+            get_paths_between(pathmap_file_path.clone(), pair.0.clone(), pair.1.clone()).unwrap();
 
-    let dir = Path::new(config.working_dir.as_str());
+        let dir = Path::new(config.working_dir.as_str());
         let poolmap_file_path = dir.join(config.poolmap_file.clone());
-    let (pool_map,_) = get_indexed_pool_data(poolmap_file_path).unwrap();
+        let (pool_map, _) = get_indexed_pool_data(poolmap_file_path).unwrap();
 
-    let (splits, total_amount) = optimize_amount_in(
+        let (_, total_amount) = optimize_amount_in(
             required_trade_paths.clone(),
             pool_map.clone(),
             BigUint::from(amount_out.parse::<u128>().unwrap()),
         );
+        if total_amount == INFINITE() {
+            let _ = wrt.write_record([
+            symbol_map.get(&pair.0).unwrap(),
+            symbol_map.get(&pair.1).unwrap(),
+            amount_out,
+            &"INFINITE".to_string(),
+        ]);
+        }
+        else {
 
-    wrt.write_record(&[symbol_map.get(&pair.0).unwrap(), &symbol_map.get(&pair.1).unwrap(), &amount_out, &total_amount.to_string()] );
+            let _ = wrt.write_record([
+            symbol_map.get(&pair.0).unwrap(),
+            symbol_map.get(&pair.1).unwrap(),
+            amount_out,
+            &total_amount.to_string(),
+        ]);
+        }
+        
     }
 
-    wrt.flush();
+    let _ = wrt.flush();
     /*let required_trade_paths = get_paths_between(
         pathmap_file_path,
         params.sellTokenAddress.clone(),
@@ -259,10 +265,6 @@ fn get_all_token_pairs(strings: &[String]) -> Vec<(String, String)> {
     strings
         .iter()
         .enumerate()
-        .flat_map(|(i, s1)| {
-            strings
-                .iter()
-                .map(move |s2| (s1.clone(), s2.clone()))
-        })
+        .flat_map(|(i, s1)| strings.iter().map(move |s2| (s1.clone(), s2.clone())))
         .collect()
 }

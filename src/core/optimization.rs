@@ -1,4 +1,4 @@
-use super::constants::SCALE;
+use super::constants::{INFINITE, SCALE};
 use super::types::{Pool, PoolMap, TradePath};
 use num_bigint::BigUint;
 use num_traits::Zero;
@@ -66,7 +66,7 @@ impl Optimizer {
             if amount_in > BigUint::zero() {
                 let amount_out = self.paths[i].get_amount_out(&amount_in, &mut temp_pools);
                 let hop_count = self.paths[i].tokens.len() - 1;
-                let mut hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
+                let hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
 
                 let amount_out =
                     (amount_out * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1_f64);
@@ -77,6 +77,17 @@ impl Optimizer {
         total_output = (total_output * Pool::from_f64(gas_penalty)) / Pool::from_f64(1_f64);
 
         Pool::to_f64(&(total_output * BigUint::from(SCALE as u64)))
+    }
+
+    fn calculate_max_output(&self) -> Vec<f64> {
+        let mut outputs: Vec<f64> = vec![];
+        for i in 0..self.paths.len() {
+            outputs.push(Pool::to_f64(
+                &(self.paths[i].get_max_amount_out(&self.pools) * BigUint::from(SCALE as u64)),
+            ));
+        }
+
+        outputs
     }
 
     fn calculate_input(&self, splits: &[f64]) -> f64 {
@@ -94,8 +105,12 @@ impl Optimizer {
 
             if amount_out > BigUint::zero() {
                 let amount_in = self.paths[i].get_amount_in(&amount_out, &mut temp_pools);
+                if amount_in.is_none() {
+                    return 0.0;
+                }
+                let amount_in = amount_in.unwrap();
                 let hop_count = self.paths[i].tokens.len() - 1;
-                let hop_count_penalty = 1.0 - (0.00002 * (hop_count as f64 - 1.0));
+                let hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
 
                 let amount_in =
                     (amount_in * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1_f64);
@@ -171,26 +186,53 @@ impl Optimizer {
         let n = splits.len();
         let mut grad = vec![0.0; n];
         let h = 0.001; // Larger h for numerical stability with big numbers
-
+        
         // Get base output
         let base_input = self.calculate_input(splits);
-
-        // Calculate gradient for each path
-        for i in 0..n {
-            let mut splits_plus_h = splits.to_vec();
-            // Ensure we maintain sum = 1 while calculating gradient
-            splits_plus_h[i] += h;
-            // Subtract h/(n-1) from other components to maintain sum = 1
-            for j in 0..n {
-                if j != i {
-                    splits_plus_h[j] -= h / (n - 1) as f64;
+        if base_input == 0.0 {
+            for i in 0..n {
+                let mut test_splits = vec![0.0; n];
+                test_splits[i] = 1.0;
+                let mut is_equal = false;
+                for (x, y) in splits.iter().zip(test_splits.iter()) {
+                    is_equal = false;
+                    if *x != *y {
+                        break;
+                    }
+                    is_equal = true;
+                }
+                if is_equal {
+                    continue;
+                }
+                let input = self.calculate_input(&test_splits);
+                if input != 0.0 {
+                    grad[i] = 1.0;
+                    // Set negative gradients for current maximum splits
+                    for (j, &split) in splits.iter().enumerate() {
+                        if split > 0.1 {
+                            // If split is significant
+                            grad[j] = -1.0;
+                        }
+                    }
+                    break;
                 }
             }
-            splits_plus_h = self.project_onto_simplex(splits_plus_h);
-            let input_plus_h = self.calculate_input(&splits_plus_h);
-            grad[i] = (input_plus_h - base_input) / h;
+        } else {
+            for i in 0..n {
+                let mut splits_plus_h = splits.to_vec();
+                // Ensure we maintain sum = 1 while calculating gradient
+                splits_plus_h[i] += h;
+                // Subtract h/(n-1) from other components to maintain sum = 1
+                for j in 0..n {
+                    if j != i {
+                        splits_plus_h[j] -= h / (n - 1) as f64;
+                    }
+                }
+                splits_plus_h = self.project_onto_simplex(splits_plus_h);
+                let input_plus_h = self.calculate_input(&splits_plus_h);
+                grad[i] = (input_plus_h - base_input) / h;
+            }
         }
-
         // Normalize gradient to avoid extremely large steps
         let grad_norm: f64 = grad.iter().map(|x| x * x).sum::<f64>().sqrt();
         if grad_norm > 1e-10 {
@@ -198,10 +240,9 @@ impl Optimizer {
                 *g /= grad_norm;
             }
         }
-
         grad
     }
-    
+
     // Custom gradient descent optimization
     fn optimize(&self) -> (Vec<BigUint>, BigUint) {
         let n_paths = self.paths.len();
@@ -228,7 +269,7 @@ impl Optimizer {
         for _ in 0..250 {
             // Calculate gradient
             let gradient = self.calculate_gradient(&splits);
-            
+
             // Calculate gradient norm for convergence check
             let gradient_norm: f64 = gradient.iter().map(|g| g * g).sum::<f64>().sqrt();
 
@@ -249,7 +290,7 @@ impl Optimizer {
 
             // Calculate new output
             let new_output = self.calculate_output(&new_splits);
-           
+
             // Update if better
             if new_output > best_output {
                 best_output = new_output;
@@ -264,7 +305,6 @@ impl Optimizer {
                 }
             }
         }
-
         // Convert final results to BigUint
         let mut biguint_splits = Vec::with_capacity(n_paths);
         for &split in &best_splits {
@@ -287,40 +327,51 @@ impl Optimizer {
     // Custom gradient descent optimization for finding optimal input for desired output
     // Keeping separate function for optimizing getting input amounts due to expected significant differences in the algorithm
     fn optimize_input(&self) -> (Vec<BigUint>, BigUint) {
-
         let n_paths = self.paths.len();
 
-        // Start with equal splits
-        let mut splits: Vec<f64> = vec![0 as f64; n_paths];
-        let mut found_direct_path = false;
-        for (i, path) in self.paths.iter().enumerate() {
-            if path.tokens.len() == 2 {
-                splits[i] = 1.0;
-                found_direct_path = true;
-            }
-        }
+        let max_output = self.calculate_max_output();
+        let normalizer: f64 = max_output.iter().sum();
+        let mut splits:Vec<f64> = max_output.iter().map(|v| v / normalizer).collect();
 
-        if !found_direct_path {
-            splits = vec![1.0 / n_paths as f64; n_paths];
-        }
-        let mut step_size = 0.1;
+        let mut step_size = 0.5;
         let mut best_splits = splits.clone();
         let mut best_input = self.calculate_input(&splits);
-        println!("Best input at start:{}", 1.0 / best_input);
-        println!("Starting optimization...");
+    
 
-        for iteration in 0..250 {
+        let mut consecutive_failures = 0;
+        for _ in 0..350 {
             // Calculate gradient
             let gradient = self.calculate_gradient_input(&splits);
-            println!("Gradient at Iteration {}: {:?}", iteration, gradient);
             // Calculate gradient norm for convergence check
-            let gradient_norm: f64 = gradient.iter().map(|g| g * g).sum::<f64>().sqrt();
 
-            // Check convergence
+            if gradient.iter().all(|&x| x.abs() < 1e-6) {
+                consecutive_failures += 1;
+                if consecutive_failures > 5 {
+                    // Try perturbation
+                    for i in 0..n_paths {
+                        if splits[i] > 0.1 {
+                            splits[i] -= 0.1;
+                            for j in 0..n_paths {
+                                if i == j {
+                                    continue;
+                                }
+                                splits[j] += 0.1 / (n_paths as f64 - 1.0);
+                            }
+                            break;
+                        }
+                    }
+                    consecutive_failures = 0;
+                    continue;
+                }
+            } else {
+                consecutive_failures = 0;
+            }
+
+            /*// Check convergence
             if gradient_norm < 1e-16 {
                 println!("Converged after {} iterations", iteration);
                 break;
-            }
+            }*/
 
             // Take a step in gradient direction
             let mut new_splits: Vec<f64> = splits
@@ -331,36 +382,27 @@ impl Optimizer {
 
             // Project onto simplex
             new_splits = self.project_onto_simplex(new_splits);
-
+            
             // Calculate new output
             let new_input = self.calculate_input(&new_splits);
-            println!("Input from iteration {} : {}", iteration, 1.0 / new_input);
-            println!("Split from iteration {} :", iteration);
-            //println!("Path 0:{}", new_splits[0]);
-            //println!("Path 1:{}", new_splits[1]);
+            
             // Update if better
             if new_input > best_input {
                 best_input = new_input;
                 best_splits = new_splits.clone();
                 splits = new_splits;
                 step_size *= 1.5; // Increase step size
-
-                println!(
-                    "NEW BEST ******* Iteration {}: input = {}, step_size = {}",
-                    iteration,
-                    1.0 / best_input,
-                    step_size
-                );
             } else {
                 step_size *= 0.7; // Reduce step size
 
                 if step_size < 1e-10 {
-                    println!("Step size too small, stopping at iteration {}", iteration);
                     break;
                 }
             }
         }
-
+        if best_input == 0.0 {
+            return (vec![], INFINITE());
+        }
         // Convert final results to BigUint
         let mut biguint_splits = Vec::with_capacity(n_paths);
         for &split in &best_splits {
@@ -374,7 +416,8 @@ impl Optimizer {
         for (i, split) in biguint_splits.iter().enumerate() {
             let amount_out = &self.total_amount * split / Pool::from_f64(1_f64);
             let amount_in = self.paths[i].get_amount_in(&amount_out, &mut temp_pools);
-            final_input += amount_in;
+
+            final_input += amount_in.map_or(INFINITE(), |v| v);
         }
 
         (biguint_splits, final_input)
