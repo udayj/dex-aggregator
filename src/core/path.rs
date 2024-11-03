@@ -1,3 +1,4 @@
+use super::constants::INFINITE;
 use super::indexer::path::{
     read_pathmap_from_disk, read_token_paths, write_pathmap_on_disk, write_paths_to_file,
 };
@@ -235,13 +236,12 @@ impl TradePath {
         if token_in.clone() == pool_key.1 {
             current_amount = first_pool.reserve1.clone();
         }
-
+        current_amount = INFINITE();
         // Process each hop in the path
         for token_pair in self.tokens.windows(2) {
             let token_in = &token_pair[0];
             let token_out = &token_pair[1];
 
-            // Create pool key (always order tokens lexicographically)
             let pool_key = if BigUint::parse_bytes(token_in.as_str()[2..].as_bytes(), 16).unwrap()
                 < BigUint::parse_bytes(token_out.as_str()[2..].as_bytes(), 16).unwrap()
             {

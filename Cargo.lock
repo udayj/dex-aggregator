@@ -453,6 +453,7 @@ dependencies = [
  "csv",
  "num-bigint",
  "num-traits",
+ "rand",
  "serde",
  "serde_json",
  "starknet",
