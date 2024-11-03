@@ -123,7 +123,6 @@ pub async fn get_aggregator_quotes(
         let dir = Path::new(config.working_dir.as_str());
         let poolmap_file_path = dir.join(config.poolmap_file.clone());
         get_indexed_pool_data(poolmap_file_path)
-            .await
             .map_err(|e| anyhow!(format!("{}", e)))?
     };
 

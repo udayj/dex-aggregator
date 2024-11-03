@@ -73,7 +73,7 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     Ok(())
 }
 
-pub async fn get_indexed_pool_data<P: AsRef<Path>>(
+pub fn get_indexed_pool_data<P: AsRef<Path>>(
     poolmap_file_path: P,
 ) -> Result<(PoolMap, u64)> {
     
@@ -173,24 +173,19 @@ impl Pool {
         reserve1: &BigUint,
     ) -> BigUint {
         // Constants for fee calculation
+        // Fee could be a configurable value but using the constant here for simplicity and debuggability
+        // since Jediswap has a constant DEX wise fee
         let fee_numerator = BigUint::from_str("3").unwrap(); // 0.3%
         let fee_denominator = BigUint::from_str("1000").unwrap(); // Base for percentage
 
         // Calculate amount_in after fee (amount_in * (1 - fee))
         let amount_in_with_fee = amount_in * (&fee_denominator - &fee_numerator);
-
-        // Calculate numerator: amount_in_with_fee * reserve1
         let numerator = &amount_in_with_fee * reserve1;
-
-        // Calculate denominator: (reserve0 * fee_denominator) + amount_in_with_fee
         let denominator = (reserve0 * &fee_denominator) + &amount_in_with_fee;
 
-        // Protect against division by zero
         if denominator.is_zero() {
             return BigUint::ZERO;
         }
-
-        // Calculate final amount out
         numerator / denominator
     }
 
@@ -204,21 +199,11 @@ impl Pool {
         let fee_numerator = BigUint::from_str("3").unwrap(); // 0.3%
         let fee_denominator = BigUint::from_str("1000").unwrap(); // Base for percentage
 
-        // Check if amount_out is greater than reserve1
         if amount_out >= reserve1 {
             return BigUint::from_str("1000000000000000000000000000").unwrap();
         }
-
-        // Calculate numerator: amount_out * reserve0 * fee_denominator
         let numerator = amount_out * reserve0 * &fee_denominator;
-
-        // Calculate denominator: (reserve1 - amount_out) * (fee_denominator - fee_numerator)
         let denominator = (reserve1 - amount_out) * (&fee_denominator - &fee_numerator);
-
-        // Protect against division by zero
-        //if denominator.is_zero() {
-        //    return None;
-        //}
 
         // Calculate final amount in and round up
         (&numerator + &denominator - BigUint::from(1u32)) / denominator

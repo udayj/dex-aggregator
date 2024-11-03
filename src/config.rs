@@ -6,8 +6,8 @@ impl Default for DexConfig {
     fn default() -> Self {
         Self {
             working_dir: "working_dir".to_string(),
-            pair_file: "pairs.csv".to_string(),
-            token_pair_file: "all_token_pairs.csv".to_string(),
+            pair_file: "pairs1.csv".to_string(),
+            token_pair_file: "all_token_pairs1.csv".to_string(),
             supported_tokens: [
         "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
         "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
@@ -16,8 +16,8 @@ impl Default for DexConfig {
         "0x5574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad",
         "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
     ].iter().map(|x| x.to_string()).collect(),
-            pathmap_file: "pathmap.txt".to_string(),
-            poolmap_file: "poolmap.txt".to_string(),
+            pathmap_file: "pathmap.json".to_string(),
+            poolmap_file: "poolmap.json".to_string(),
             rpc_url: "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa".to_string(),
             chain_id: "0x534e5f4d41494e".to_string()
         }

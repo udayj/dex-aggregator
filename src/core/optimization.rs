@@ -13,7 +13,7 @@ pub fn optimize_amount_out(
 
     sorted_required_paths.sort_by(|a, b| a.tokens.len().cmp(&b.tokens.len()));
     let optimizer = Optimizer::new(sorted_required_paths, pool_map, total_amount.clone());
-    let (splits, total_output, _) = optimizer.optimize();
+    let (splits, total_output) = optimizer.optimize();
 
     (splits, total_output)
 }
@@ -28,7 +28,7 @@ pub fn optimize_amount_in(
 
     sorted_required_paths.sort_by(|a, b| a.tokens.len().cmp(&b.tokens.len()));
     let optimizer = Optimizer::new(sorted_required_paths, pool_map, total_amount.clone());
-    let (splits, total_input, _) = optimizer.optimize_input();
+    let (splits, total_input) = optimizer.optimize_input();
 
     (splits, total_input)
 }
@@ -90,20 +90,20 @@ impl Optimizer {
             }
 
             let split_biguint = Pool::from_f64(split);
-            let amount_out = &self.total_amount * &split_biguint / Pool::from_f64(1 as f64);
+            let amount_out = &self.total_amount * &split_biguint / Pool::from_f64(1_f64);
 
             if amount_out > BigUint::zero() {
                 let amount_in = self.paths[i].get_amount_in(&amount_out, &mut temp_pools);
                 let hop_count = self.paths[i].tokens.len() - 1;
-                let mut hop_count_penalty = 1.0 - (0.00002 * (hop_count as f64 - 1.0));
+                let hop_count_penalty = 1.0 - (0.00002 * (hop_count as f64 - 1.0));
 
                 let amount_in =
-                    (amount_in * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1 as f64);
+                    (amount_in * Pool::from_f64(hop_count_penalty)) / Pool::from_f64(1_f64);
                 total_input += amount_in;
             }
         }
         let gas_penalty = 1.0 - (0.0001 * (active_splits as f64 - 1.0));
-        total_input = (total_input * Pool::from_f64(gas_penalty)) / Pool::from_f64(1 as f64);
+        total_input = (total_input * Pool::from_f64(gas_penalty)) / Pool::from_f64(1_f64);
 
         1.0 / Pool::to_f64(&(total_input * BigUint::from(SCALE as u64)))
     }
@@ -203,7 +203,7 @@ impl Optimizer {
     }
     
     // Custom gradient descent optimization
-    fn optimize(&self) -> (Vec<BigUint>, BigUint, PoolMap) {
+    fn optimize(&self) -> (Vec<BigUint>, BigUint) {
         let n_paths = self.paths.len();
 
         // Start with equal splits
@@ -223,19 +223,17 @@ impl Optimizer {
         let mut step_size = 0.1;
         let mut best_splits = splits.clone();
         let mut best_output = self.calculate_output(&splits);
-        println!("Best output at start:{}", best_output);
-        println!("Starting optimization...");
 
-        for iteration in 0..250 {
+        // consider max iterations as a configurable value
+        for _ in 0..250 {
             // Calculate gradient
             let gradient = self.calculate_gradient(&splits);
-            println!("Gradient at Iteration {}: {:?}", iteration, gradient);
+            
             // Calculate gradient norm for convergence check
             let gradient_norm: f64 = gradient.iter().map(|g| g * g).sum::<f64>().sqrt();
 
             // Check convergence
             if gradient_norm < 1e-10 {
-                println!("Converged after {} iterations", iteration);
                 break;
             }
 
@@ -251,26 +249,17 @@ impl Optimizer {
 
             // Calculate new output
             let new_output = self.calculate_output(&new_splits);
-            println!("Output from iteration {} : {}", iteration, new_output);
-            println!("Split from iteration {} :", iteration);
-            //println!("Path 0:{}", new_splits[0]);
-            //println!("Path 1:{}", new_splits[1]);
+           
             // Update if better
             if new_output > best_output {
                 best_output = new_output;
                 best_splits = new_splits.clone();
                 splits = new_splits;
                 step_size *= 1.2; // Increase step size
-
-                println!(
-                    "Iteration {}: output = {}, step_size = {}",
-                    iteration, best_output, step_size
-                );
             } else {
                 step_size *= 0.7; // Reduce step size
 
                 if step_size < 1e-10 {
-                    println!("Step size too small, stopping at iteration {}", iteration);
                     break;
                 }
             }
@@ -287,16 +276,18 @@ impl Optimizer {
         let mut temp_pools = self.pools.clone();
         let mut final_output = BigUint::zero();
         for (i, split) in biguint_splits.iter().enumerate() {
-            let amount_in = &self.total_amount * split / Pool::from_f64(1 as f64);
+            let amount_in = &self.total_amount * split / Pool::from_f64(1_f64);
             let amount_out = self.paths[i].get_amount_out(&amount_in, &mut temp_pools);
             final_output += amount_out;
         }
 
-        (biguint_splits, final_output, self.pools.clone())
+        (biguint_splits, final_output)
     }
 
-    // Custom gradient descent optimization
-    fn optimize_input(&self) -> (Vec<BigUint>, BigUint, PoolMap) {
+    // Custom gradient descent optimization for finding optimal input for desired output
+    // Keeping separate function for optimizing getting input amounts due to expected significant differences in the algorithm
+    fn optimize_input(&self) -> (Vec<BigUint>, BigUint) {
+
         let n_paths = self.paths.len();
 
         // Start with equal splits
@@ -381,11 +372,11 @@ impl Optimizer {
         let mut temp_pools = self.pools.clone();
         let mut final_input = BigUint::zero();
         for (i, split) in biguint_splits.iter().enumerate() {
-            let amount_out = &self.total_amount * split / Pool::from_f64(1 as f64);
+            let amount_out = &self.total_amount * split / Pool::from_f64(1_f64);
             let amount_in = self.paths[i].get_amount_in(&amount_out, &mut temp_pools);
             final_input += amount_in;
         }
 
-        (biguint_splits, final_input, self.pools.clone())
+        (biguint_splits, final_input)
     }
 }

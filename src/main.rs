@@ -194,3 +194,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
 // block number - "latest"/block_number based on pool data
 // chain id
 // routes [(percent:, (pair address, token in, token out, token in symbol, token out symbol)]
+
+// combine routes
+
