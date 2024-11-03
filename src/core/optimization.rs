@@ -186,53 +186,26 @@ impl Optimizer {
         let n = splits.len();
         let mut grad = vec![0.0; n];
         let h = 0.001; // Larger h for numerical stability with big numbers
-        
+
         // Get base output
         let base_input = self.calculate_input(splits);
-        if base_input == 0.0 {
-            for i in 0..n {
-                let mut test_splits = vec![0.0; n];
-                test_splits[i] = 1.0;
-                let mut is_equal = false;
-                for (x, y) in splits.iter().zip(test_splits.iter()) {
-                    is_equal = false;
-                    if *x != *y {
-                        break;
-                    }
-                    is_equal = true;
-                }
-                if is_equal {
-                    continue;
-                }
-                let input = self.calculate_input(&test_splits);
-                if input != 0.0 {
-                    grad[i] = 1.0;
-                    // Set negative gradients for current maximum splits
-                    for (j, &split) in splits.iter().enumerate() {
-                        if split > 0.1 {
-                            // If split is significant
-                            grad[j] = -1.0;
-                        }
-                    }
-                    break;
+
+        // Calculate gradient for each path
+        for i in 0..n {
+            let mut splits_plus_h = splits.to_vec();
+            // Ensure we maintain sum = 1 while calculating gradient
+            splits_plus_h[i] += h;
+            // Subtract h/(n-1) from other components to maintain sum = 1
+            for j in 0..n {
+                if j != i {
+                    splits_plus_h[j] -= h / (n - 1) as f64;
                 }
             }
-        } else {
-            for i in 0..n {
-                let mut splits_plus_h = splits.to_vec();
-                // Ensure we maintain sum = 1 while calculating gradient
-                splits_plus_h[i] += h;
-                // Subtract h/(n-1) from other components to maintain sum = 1
-                for j in 0..n {
-                    if j != i {
-                        splits_plus_h[j] -= h / (n - 1) as f64;
-                    }
-                }
-                splits_plus_h = self.project_onto_simplex(splits_plus_h);
-                let input_plus_h = self.calculate_input(&splits_plus_h);
-                grad[i] = (input_plus_h - base_input) / h;
-            }
+            splits_plus_h = self.project_onto_simplex(splits_plus_h);
+            let input_plus_h = self.calculate_input(&splits_plus_h);
+            grad[i] = (input_plus_h - base_input) / h;
         }
+
         // Normalize gradient to avoid extremely large steps
         let grad_norm: f64 = grad.iter().map(|x| x * x).sum::<f64>().sqrt();
         if grad_norm > 1e-10 {
@@ -240,6 +213,7 @@ impl Optimizer {
                 *g /= grad_norm;
             }
         }
+
         grad
     }
 
@@ -337,41 +311,15 @@ impl Optimizer {
         let mut best_splits = splits.clone();
         let mut best_input = self.calculate_input(&splits);
     
-
-        let mut consecutive_failures = 0;
         for _ in 0..350 {
             // Calculate gradient
             let gradient = self.calculate_gradient_input(&splits);
             // Calculate gradient norm for convergence check
-
-            if gradient.iter().all(|&x| x.abs() < 1e-6) {
-                consecutive_failures += 1;
-                if consecutive_failures > 5 {
-                    // Try perturbation
-                    for i in 0..n_paths {
-                        if splits[i] > 0.1 {
-                            splits[i] -= 0.1;
-                            for j in 0..n_paths {
-                                if i == j {
-                                    continue;
-                                }
-                                splits[j] += 0.1 / (n_paths as f64 - 1.0);
-                            }
-                            break;
-                        }
-                    }
-                    consecutive_failures = 0;
-                    continue;
-                }
-            } else {
-                consecutive_failures = 0;
-            }
-
-            /*// Check convergence
+            let gradient_norm: f64 = gradient.iter().map(|g| g * g).sum::<f64>().sqrt();
+            // Check convergence
             if gradient_norm < 1e-16 {
-                println!("Converged after {} iterations", iteration);
                 break;
-            }*/
+            }
 
             // Take a step in gradient direction
             let mut new_splits: Vec<f64> = splits
