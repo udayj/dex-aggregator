@@ -94,7 +94,7 @@ async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<QuoteRequest>,
 ) -> Result<Json<QuoteResponse>, ApiError> {
-
+    
     if let Err(e) = validate_request(state.config.as_ref(), &params) {
         return Err(ApiError::BadRequest(format!("{}", e)));
     }
@@ -113,7 +113,7 @@ async fn get_quotes(
         (status = 204, description = "Successfully updated pair data"),
         (status = 500, description = "Internal Server Error")
     ),
-    tag = "Index pair data"
+    tag = "Index pair data - WARNING long running process - use prepared dataset"
 )]
 async fn index_pair_data(State(state): State<DexConfigState>) -> Result<StatusCode, ApiError> {
     index_and_save_pair_data(state.config.as_ref())
