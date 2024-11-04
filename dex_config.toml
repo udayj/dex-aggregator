@@ -1,3 +1,4 @@
+# Sample config file
 working_dir = "data"
 pair_file = "pairs.csv"
 token_pair_file = "all_pair_tokens.csv"

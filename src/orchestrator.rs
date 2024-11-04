@@ -12,6 +12,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+// Orchestrator is a middleware between the core dex components and the main REST service entry points
+
+// Function to validate requests
 pub fn validate_request(config: &DexConfig, request: &QuoteRequest) -> Result<()> {
     if request.buyTokenAddress.trim().is_empty() || request.sellTokenAddress.trim().is_empty() {
         return Err(anyhow!("Buy and Sell Token addresses cannot be empty"));
@@ -29,6 +32,7 @@ pub fn validate_request(config: &DexConfig, request: &QuoteRequest) -> Result<()
     Ok(())
 }
 
+// Create working directory and get fresh pair data from rpc node
 pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<()> {
     if !Path::new(config.working_dir.as_str()).exists() {
         fs::create_dir(config.working_dir.clone())?;
@@ -48,6 +52,8 @@ pub async fn index_and_save_pair_data(config: &DexConfig) -> Result<()> {
     Ok(())
 }
 
+// Recalculate and index fresh path data on disk
+// Required to be called only if pair data has changed or supported token list has changed
 pub async fn index_and_save_path_data(config: &DexConfig) -> Result<()> {
     if !Path::new(config.working_dir.as_str()).exists() {
         return Err(anyhow!("Token Pair data file not found"));

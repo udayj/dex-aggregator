@@ -13,6 +13,12 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 pub async fn index_pair_data(rpc_url: &str, pair_file: &str, token_pair_file: &str) -> Result<()> {
+
+    // We first get list of all pairs from the factory contract
+    // Then for each pair we get list of token0 and token1
+    // Finally we write the combination (pair_address, token0_address, token1_address) on disk
+    // An Alternate efficient approach could be to form list of token pairs based on supported tokens
+    // and then call get_pair function in Factory contract and write thos combinations to disk which have a pair
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url).unwrap()));
 
     let calldata = vec![];
@@ -89,6 +95,7 @@ pub async fn index_pair_data(rpc_url: &str, pair_file: &str, token_pair_file: &s
         for pair in batch_owned {
             let shared_output = output.clone();
             let rpc_url = rpc_url.clone();
+            // Creating separate threads to get token information from rpc node
             let worker_thread = tokio::spawn(async move {
                 let provider =
                     JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url.as_str()).unwrap()));

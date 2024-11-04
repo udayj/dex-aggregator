@@ -19,6 +19,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 fn create_pools_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) -> Result<PoolMap> {
+    // Read pair data file and create empty pools for all supported tokens in the pool map
     let mut pool_map = PoolMap::new();
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
@@ -80,6 +81,8 @@ pub fn get_indexed_pool_data<P: AsRef<Path>>(poolmap_file_path: P) -> Result<(Po
     Ok((pool_map, block_number))
 }
 
+// Function to get upto date reserves data for all pools
+// We can do this since we know beforehand that the number of pools can be at max 6C2 = 15
 pub async fn get_latest_pool_data<P: AsRef<Path>>(
     rpc_url: &str,
     token_pair_file_path: P,
@@ -91,14 +94,21 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
         .map(|(pair, pool)| (pair.clone(), pool.clone()))
         .collect();
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url).unwrap()));
+
+    // Get latest accepted block number
     let block_number = provider.block_number().await?;
+
+    // Initialize thread safe pool map from the empty pools created previously
     let arc_pool_map: Arc<Mutex<PoolMap>> = Arc::new(Mutex::new(pool_map.clone()));
     let mut threads = vec![];
     let rpc_url = rpc_url.to_string();
     for (pair, pool) in pool_entries {
         let shared_pool_map = arc_pool_map.clone();
         let rpc_url = rpc_url.clone();
+        // Create separate threads to get latest reserves data asynchronously
         let worker_thread = tokio::spawn(async move {
+
+            // Create sorted token pair
             let pool_key = if BigUint::parse_bytes(pair.0.as_str()[2..].as_bytes(), 16).unwrap()
                 < BigUint::parse_bytes(pair.1.as_str()[2..].as_bytes(), 16).unwrap()
             {
@@ -146,6 +156,8 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
                 fee: pool.fee.clone(),
                 block_number,
             };
+
+            // Store updated pool reserves data in the shared pool map
             let mut shared_pool_map = shared_pool_map.lock().unwrap();
             shared_pool_map.insert(pool_key, updated_pool.clone());
         });

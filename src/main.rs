@@ -53,16 +53,22 @@ impl IntoResponse for ApiError {
 // Generate the OpenAPI schema
 #[derive(OpenApi)]
 #[openapi(
-    paths(get_quotes, index_pair_data, index_path_data, index_pool_data),
+    paths(
+        get_quotes,
+        index_pair_data,
+        index_path_data,
+        index_pool_data
+    ),
     components(
         schemas(QuoteRequest),
         schemas(QuoteResponse),
         schemas(Route),
         schemas(ResponsePool)
-    )
+    ),
 )]
 struct ApiDoc;
 
+// Entry point for getting trade quotes
 #[utoipa::path(
 get,
 path = "/quotes",
@@ -88,6 +94,7 @@ async fn get_quotes(
     State(state): State<DexConfigState>,
     Query(params): Query<QuoteRequest>,
 ) -> Result<Json<QuoteResponse>, ApiError> {
+
     if let Err(e) = validate_request(state.config.as_ref(), &params) {
         return Err(ApiError::BadRequest(format!("{}", e)));
     }
@@ -97,6 +104,8 @@ async fn get_quotes(
     }
 }
 
+// Long running process - should not be used for now
+// Keeping this function around as an artifact on how to create initial pair data
 #[utoipa::path(
     post,
     path = "/index_pair_data",
@@ -114,6 +123,8 @@ async fn index_pair_data(State(state): State<DexConfigState>) -> Result<StatusCo
     Ok(StatusCode::NO_CONTENT)
 }
 
+// Entry point function to recalculate path data
+// This is not required to be called unless supported token list is changed
 #[utoipa::path(
     post,
     path = "/index_path_data",
@@ -131,6 +142,7 @@ async fn index_path_data(State(state): State<DexConfigState>) -> Result<StatusCo
     Ok(StatusCode::NO_CONTENT)
 }
 
+// Entry point for function to get latest reserves data from pool contract and persist on disk
 #[utoipa::path(
     post,
     path = "/index_pool_data",
@@ -151,6 +163,7 @@ async fn index_pool_data(State(state): State<DexConfigState>) -> Result<StatusCo
 // API handlers
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    
     let openapi = ApiDoc::openapi();
     let config_path = PathBuf::from("dex_config.toml");
     let config_state = DexConfigState {
@@ -172,20 +185,3 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// input json
-// token in
-// token out
-// sell amount - amount in
-// buy amount - amount out
-// get_latest - bool
-
-// output json
-// token in
-// token out
-// sell amount - amount in
-// buy amount - amount out
-// block number - "latest"/block_number based on pool data
-// chain id
-// routes [(percent:, (pair address, token in, token out, token in symbol, token out symbol)]
-
-// combine routes

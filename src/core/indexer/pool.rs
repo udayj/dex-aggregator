@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+// Serialize poolmap data to json and write to disk
 pub fn write_poolmap_data_on_disk<P: AsRef<Path>>(
     poolmap_file_path: P,
     pool_map: &HashMap<(String, String), Pool>,
@@ -16,6 +17,7 @@ pub fn write_poolmap_data_on_disk<P: AsRef<Path>>(
     Ok(())
 }
 
+// Read json data from disk and deserialize to PoolMap struct
 pub fn read_poolmap_data_from_disk<P: AsRef<Path>>(poolmap_file_path: P) -> Result<PoolMap> {
     let pool_list_json = fs::read_to_string(poolmap_file_path)?;
     let pool_list: PoolList = serde_json::from_str(&pool_list_json)?;
@@ -23,6 +25,9 @@ pub fn read_poolmap_data_from_disk<P: AsRef<Path>>(poolmap_file_path: P) -> Resu
     Ok(pool_map)
 }
 
+// PoolEntry and PoolList structs are json friendly structures enabling us to serialize data to json and deserialize data
+// Kept here since this is specific just to the indexing component
+// All serde complexity is hidden behind the write/read interfaces exposed as public functions
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct PoolEntry {
     token0: String,
