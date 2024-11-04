@@ -99,6 +99,7 @@ pub async fn index_and_save_pool_data(config: &DexConfig) -> Result<()> {
     Ok(())
 }
 
+// Function to get trade quotes from the core dex
 pub async fn get_aggregator_quotes(
     config: &DexConfig,
     params: QuoteRequest,
@@ -112,6 +113,7 @@ pub async fn get_aggregator_quotes(
     let dir = Path::new(config.working_dir.as_str());
     let token_pair_file_path = dir.join(config.token_pair_file.clone());
 
+    // Get all possible paths between token pair
     let required_trade_paths = get_paths_between(
         pathmap_file_path,
         params.sellTokenAddress.clone(),
@@ -119,6 +121,7 @@ pub async fn get_aggregator_quotes(
     )
     .map_err(|e| anyhow!(format!("{}", e)))?;
 
+    // Get latest/indexed pool reserves data based on query parameter getLatest
     let (pool_map, block_number) = if params.getLatest.is_some_and(|x| x) {
         get_latest_pool_data(
             &config.rpc_url,
@@ -134,12 +137,14 @@ pub async fn get_aggregator_quotes(
     };
 
     if params.sellAmount.is_some() {
+        // When selling amount is given, we do not consider buyAmount
         let (splits, total_amount) = optimize_amount_out(
             required_trade_paths.clone(),
             pool_map.clone(),
             BigUint::from(params.sellAmount.clone().unwrap().parse::<u128>().unwrap()),
         );
 
+        // Form output structure that can be converted to json format as a response from the REST api service
         let routes: Vec<Route> = splits
             .iter()
             .zip(required_trade_paths.iter())
@@ -170,7 +175,8 @@ pub async fn get_aggregator_quotes(
             pool_map.clone(),
             BigUint::from(params.buyAmount.clone().unwrap().parse::<u128>().unwrap()),
         );
-        //println!("Total Amount In:{}\n Splits: {:?}\n", total_amount, splits);
+        
+        // Form output structure that can be converted to json format as a response from the REST api service
         let routes: Vec<Route> = splits
             .iter()
             .zip(required_trade_paths.iter())
@@ -202,15 +208,8 @@ pub async fn get_aggregator_quotes(
     }
 }
 
-// output json
-// token in
-// token out
-// sell amount - amount in
-// buy amount - amount out
-// block number - "latest"/block_number based on pool data
-// chain id
-// routes [[percent:x, Vec<(pair address, token in, token out, token in symbol, token out symbol)]
 
+// Form response path comprising ResponsePools for a TradePath
 fn build_response_path(
     trade_path: &TradePath,
     pool_map: &HashMap<(String, String), Pool>,
@@ -227,6 +226,7 @@ fn build_response_pool(
     token_out: &str,
     pool_map: &HashMap<(String, String), Pool>,
 ) -> Option<ResponsePool> {
+    // TODO - Consider moving this to a configurable section
     let symbol_list: Vec<(&str, &str)> = vec![
         (
             "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -267,7 +267,7 @@ fn build_response_pool(
         pairAddress: p.address.clone(),
         tokenIn: token_in.to_string(),
         tokenOut: token_out.to_string(),
-        tokenInSymbol: symbol_map.get(token_in).unwrap().to_string(), // You might want to add actual symbol mapping
-        tokenOutsymbol: symbol_map.get(token_out).unwrap().to_string(), // You might want to add actual symbol mapping
+        tokenInSymbol: symbol_map.get(token_in).unwrap().to_string(), 
+        tokenOutsymbol: symbol_map.get(token_out).unwrap().to_string(), 
     })
 }

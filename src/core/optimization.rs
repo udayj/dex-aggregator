@@ -49,7 +49,7 @@ impl Optimizer {
         }
     }
 
-    // Calculate objective function value
+    // Calculate output for a given split
     fn calculate_output(&self, splits: &[f64]) -> f64 {
         let mut total_output = BigUint::zero();
 
@@ -66,6 +66,8 @@ impl Optimizer {
             if amount_in > BigUint::zero() {
                 let amount_out = self.paths[i].get_amount_out(&amount_in, &mut temp_pools);
                 let hop_count = self.paths[i].tokens.len() - 1;
+                // Using a constant hop penalty per hop as simplification
+                // This simulates extra gas cost being spent based on route length
                 let hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
 
                 let amount_out =
@@ -73,6 +75,8 @@ impl Optimizer {
                 total_output += amount_out;
             }
         }
+        // Gas penalty could be a separate module that abstracts the actual logic of finding gas costs based on type of pool
+        // This gas penalty is proportional to number of paths across which trade is split 
         let gas_penalty = 1.0 - (0.0001 * (active_splits as f64 - 1.0));
         total_output = (total_output * Pool::from_f64(gas_penalty)) / Pool::from_f64(1_f64);
 
@@ -90,6 +94,7 @@ impl Optimizer {
         outputs
     }
 
+    // Calculate total input tokens required for a given split
     fn calculate_input(&self, splits: &[f64]) -> f64 {
         let mut total_input = BigUint::zero();
 
@@ -110,6 +115,7 @@ impl Optimizer {
                 }
                 let amount_in = amount_in.unwrap();
                 let hop_count = self.paths[i].tokens.len() - 1;
+                // Using a constant hop penalty per hop as simplification
                 let hop_count_penalty = 1.0 - (0.002 * (hop_count as f64 - 1.0));
 
                 let amount_in =
@@ -117,6 +123,7 @@ impl Optimizer {
                 total_input += amount_in;
             }
         }
+        // Gas penalty could be a separate module that abstracts the actual logic of finding gas costs based on type of pool
         let gas_penalty = 1.0 - (0.0001 * (active_splits as f64 - 1.0));
         total_input = (total_input * Pool::from_f64(gas_penalty)) / Pool::from_f64(1_f64);
 
@@ -217,13 +224,14 @@ impl Optimizer {
         grad
     }
 
-    // Custom gradient descent optimization
+    // Custom gradient optimization for the situation when input/selling amount is given
     fn optimize(&self) -> (Vec<BigUint>, BigUint) {
         let n_paths = self.paths.len();
 
         // Start with equal splits
         let mut splits: Vec<f64> = vec![0 as f64; n_paths];
         let mut found_direct_path = false;
+        // Start with direct path if available
         for (i, path) in self.paths.iter().enumerate() {
             if path.tokens.len() == 2 {
                 splits[i] = 1.0;
@@ -298,7 +306,7 @@ impl Optimizer {
         (biguint_splits, final_output)
     }
 
-    // Custom gradient descent optimization for finding optimal input for desired output
+    // Custom gradient descent/ascent optimization for finding optimal input for desired output
     // Keeping separate function for optimizing getting input amounts due to expected significant differences in the algorithm
     fn optimize_input(&self) -> (Vec<BigUint>, BigUint) {
         let n_paths = self.paths.len();

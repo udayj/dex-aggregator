@@ -57,6 +57,7 @@ fn create_pools_from_csv<P: AsRef<Path>>(path: P, required_tokens: &[String]) ->
     Ok(pool_map)
 }
 
+// Function to get latest pool reserves data from rpc node and persist on disk through indexer
 pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     rpc_url: &str,
     token_pair_file_path: P,
@@ -72,6 +73,8 @@ pub async fn index_latest_poolmap_data<P: AsRef<Path>>(
     Ok(())
 }
 
+// Function to read previously indexed pool data from disk
+// Faster than getting latest data from rpc node
 pub fn get_indexed_pool_data<P: AsRef<Path>>(poolmap_file_path: P) -> Result<(PoolMap, u64)> {
     let pool_map = read_poolmap_data_from_disk(poolmap_file_path)?;
     let mut block_number = 0;
@@ -120,7 +123,6 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
             let provider =
                 JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url.as_str()).unwrap()));
             let calldata = vec![];
-            //let mut str_felts = vec![];
             let mut byte_felts = vec![];
 
             let result = provider

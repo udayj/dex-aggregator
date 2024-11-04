@@ -15,6 +15,8 @@ pub fn update_path_data<P: AsRef<Path>>(
     required_tokens: &Vec<String>,
     output_paths: &[P],
 ) -> Result<()> {
+    // Get graph representation of pair data
+    // Every token pair with a pool gets an edge in the graph
     let graph = compute_graph_from_csv(path, required_tokens)?;
     for (i, token) in required_tokens.iter().enumerate() {
         let start_node = token.to_string().clone();
@@ -34,6 +36,7 @@ pub fn update_path_data<P: AsRef<Path>>(
     Ok(())
 }
 
+// Function to read path data file using indexer and get all paths between every pair of token nodes
 pub fn get_all_paths<P: AsRef<Path>>(file_paths: &[P]) -> Result<PathMap> {
     let mut combined_map: PathMap = PathMap::new();
 

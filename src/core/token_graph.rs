@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
+// For efficiency this function uses supported token list to form a reduced graph
 pub fn compute_graph_from_csv<P: AsRef<Path>>(
     path: P,
     required_tokens: &[String],
@@ -79,6 +80,7 @@ impl Graph {
         all_paths
     }
 
+    // Function to perform a depth first search from a starting point to all nodes of interest
     fn dfs(
         &self,
         current: &str,

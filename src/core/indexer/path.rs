@@ -7,6 +7,10 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 
+// Function to write path data to disk
+// This creates a simple txt file for a node A
+// Every line in the file is path from the starting node A
+// File contains all unique traversable paths from starting node A
 pub fn write_paths_to_file<P: AsRef<Path>>(
     paths: &HashMap<String, Vec<Vec<String>>>,
     output_path: &P,
@@ -14,7 +18,7 @@ pub fn write_paths_to_file<P: AsRef<Path>>(
     let mut file = File::create(output_path)?;
 
     for (_, path_list) in paths.iter() {
-        //writeln!(file, "\nPaths to {}:", destination)?;
+        
         let mut new_path_list = path_list.clone();
         new_path_list.sort_by_key(|a| a.len());
         for path in new_path_list.iter() {
@@ -24,6 +28,7 @@ pub fn write_paths_to_file<P: AsRef<Path>>(
     Ok(())
 }
 
+// Function to read token path file from disk and create a map of paths indexed by token pairs
 pub fn read_token_paths<P: AsRef<Path>>(file_path: P) -> Result<PathMap> {
     // Create a HashMap to store paths indexed by (start_token, end_token)
     let mut path_map: PathMap = HashMap::new();
@@ -36,7 +41,7 @@ pub fn read_token_paths<P: AsRef<Path>>(file_path: P) -> Result<PathMap> {
 
         // Split the line by whitespace
         let tokens: Vec<String> = line.split_whitespace().map(|s| s.to_string()).collect();
-        // Skip invalid lines
+        // Skip invalid lines - shouldnt ever be executed
         if tokens.len() < 2 {
             continue;
         }
@@ -73,7 +78,9 @@ pub fn read_pathmap_from_disk<P: AsRef<Path>>(pathmap_file: P) -> Result<PathMap
     Ok(path_map)
 }
 
-// The following is required to serialize and store pathmap as a json on disk
+// The following is required to serialize/deserialize and store/read pathmap as a json on disk
+// Kept here since this is specific just to the indexing component
+// All serde complexity is hidden behind the write/read interfaces exposed as public functions
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct PathList {
     // Use a vector of entries instead of HashMap with tuple keys
