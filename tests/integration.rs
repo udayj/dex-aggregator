@@ -17,7 +17,7 @@ fn get_quotes_given_amount_in() {
     let pathmap_file_path = dir.join(config.pathmap_file.clone());
 
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(config.working_dir.as_str());
-   
+
     let symbol_list: Vec<(&str, &str)> = vec![
         (
             "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -132,7 +132,7 @@ fn get_quotes_given_amount_out() {
 
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(config.working_dir.as_str());
     println!("{:?}", dir.as_os_str());
-    
+
     let symbol_list: Vec<(&str, &str)> = vec![
         (
             "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
@@ -222,22 +222,19 @@ fn get_quotes_given_amount_out() {
         );
         if total_amount == INFINITE() {
             let _ = wrt.write_record([
-            symbol_map.get(&pair.0).unwrap(),
-            symbol_map.get(&pair.1).unwrap(),
-            amount_out,
-            &"INFINITE".to_string(),
-        ]);
-        }
-        else {
-
+                symbol_map.get(&pair.0).unwrap(),
+                symbol_map.get(&pair.1).unwrap(),
+                amount_out,
+                &"INFINITE".to_string(),
+            ]);
+        } else {
             let _ = wrt.write_record([
-            symbol_map.get(&pair.0).unwrap(),
-            symbol_map.get(&pair.1).unwrap(),
-            amount_out,
-            &total_amount.to_string(),
-        ]);
+                symbol_map.get(&pair.0).unwrap(),
+                symbol_map.get(&pair.1).unwrap(),
+                amount_out,
+                &total_amount.to_string(),
+            ]);
         }
-        
     }
 
     let _ = wrt.flush();

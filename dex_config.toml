@@ -1,6 +1,6 @@
-working_dir = "working_dir2"
-pair_file = "pairs1.csv"
-token_pair_file = "all_pair_tokens1.csv"
+working_dir = "data"
+pair_file = "pairs.csv"
+token_pair_file = "all_pair_tokens.csv"
 supported_tokens = [
         "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
         "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
@@ -11,5 +11,6 @@ supported_tokens = [
     ]
 pathmap_file = "pathmap.json"
 poolmap_file = "poolmap.json"
+# get api key from .env file - using it here since its a free tier api key
 rpc_url = "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa"
 chain_id = "0x534e5f4d41494e"

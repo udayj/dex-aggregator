@@ -198,7 +198,7 @@ impl TradePath {
                     );
 
                     new_current_amount.as_ref()?;
-                    
+
                     current_amount = new_current_amount.unwrap();
                     let updated_pool = Pool {
                         reserve0: BigUint::checked_sub(
@@ -223,20 +223,7 @@ impl TradePath {
     }
 
     pub fn get_max_amount_out(&self, pools: &HashMap<(String, String), Pool>) -> BigUint {
-        let (token_in, token_out) = (&self.tokens[0], &self.tokens[1]);
-        let pool_key = if BigUint::parse_bytes(token_in.as_str()[2..].as_bytes(), 16).unwrap()
-            < BigUint::parse_bytes(token_out.as_str()[2..].as_bytes(), 16).unwrap()
-        {
-            (token_in.clone(), token_out.clone())
-        } else {
-            (token_out.clone(), token_in.clone())
-        };
-        let first_pool = pools.get(&pool_key).unwrap();
-        let mut current_amount = first_pool.reserve0.clone();
-        if token_in.clone() == pool_key.1 {
-            current_amount = first_pool.reserve1.clone();
-        }
-        current_amount = INFINITE();
+        let mut current_amount = INFINITE();
         // Process each hop in the path
         for token_pair in self.tokens.windows(2) {
             let token_in = &token_pair[0];

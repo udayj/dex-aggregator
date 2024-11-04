@@ -305,12 +305,12 @@ impl Optimizer {
 
         let max_output = self.calculate_max_output();
         let normalizer: f64 = max_output.iter().sum();
-        let mut splits:Vec<f64> = max_output.iter().map(|v| v / normalizer).collect();
+        let mut splits: Vec<f64> = max_output.iter().map(|v| v / normalizer).collect();
 
         let mut step_size = 0.5;
         let mut best_splits = splits.clone();
         let mut best_input = self.calculate_input(&splits);
-    
+
         for _ in 0..350 {
             // Calculate gradient
             let gradient = self.calculate_gradient_input(&splits);
@@ -330,10 +330,10 @@ impl Optimizer {
 
             // Project onto simplex
             new_splits = self.project_onto_simplex(new_splits);
-            
+
             // Calculate new output
             let new_input = self.calculate_input(&new_splits);
-            
+
             // Update if better
             if new_input > best_input {
                 best_input = new_input;
