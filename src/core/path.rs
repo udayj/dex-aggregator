@@ -59,6 +59,7 @@ pub fn update_pathmap<P: AsRef<Path>>(pathmap_file: P, output_paths: &[P]) -> Re
     Ok(())
 }
 
+// Function to calculate all paths between a token pair
 pub fn get_paths_between<P: AsRef<Path>>(
     pathmap_file: P,
     token_in: String,
@@ -76,6 +77,8 @@ pub fn get_paths_between<P: AsRef<Path>>(
 }
 
 impl TradePath {
+    // Function to calculate final amount received from a path of pools
+    // ref: https://github.com/jediswaplabs/JediSwap/blob/main/contracts/Router.cairo
     pub fn get_amount_out(
         &self,
         amount_in: &BigUint,
@@ -88,7 +91,7 @@ impl TradePath {
             let token_in = &token_pair[0];
             let token_out = &token_pair[1];
 
-            // Create pool key (always order tokens lexicographically)
+            // Create sorted pool key
             let pool_key = if BigUint::parse_bytes(token_in.as_str()[2..].as_bytes(), 16).unwrap()
                 < BigUint::parse_bytes(token_out.as_str()[2..].as_bytes(), 16).unwrap()
             {
@@ -106,6 +109,8 @@ impl TradePath {
                         &pool.reserve0.clone(),
                         &pool.reserve1.clone(),
                     );
+                    // We need to update the pool reserves since the same pool could be used in some other path
+                    // If not updated, the optimizer will get an overestimate of the total output from a split
                     let updated_pool = Pool {
                         reserve0: pool.reserve0.clone() + current_amount_in,
                         reserve1: pool.reserve1.clone() - current_amount.clone(),
@@ -146,12 +151,14 @@ impl TradePath {
         current_amount
     }
 
+    // Function to calculate the final amount to be given as input to a path to get desired output
     pub fn get_amount_in(
         &self,
         amount_out: &BigUint,
         pools: &mut HashMap<(String, String), Pool>,
     ) -> Option<BigUint> {
         let mut current_amount = amount_out.clone();
+        // Reverse the path
         let tokens: Vec<String> = self.tokens.clone().into_iter().rev().collect();
         // Process each hop in the path
         for token_pair in tokens.windows(2) {
@@ -225,6 +232,8 @@ impl TradePath {
         Some(current_amount)
     }
 
+    // Utility function to calculate the max output possible from a given path provided we start with infinite input tokens
+    // This ultimately helps give a sense of which path has most liquidity
     pub fn get_max_amount_out(&self, pools: &HashMap<(String, String), Pool>) -> BigUint {
         let mut current_amount = INFINITE();
         // Process each hop in the path

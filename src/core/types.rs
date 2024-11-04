@@ -19,7 +19,7 @@ pub struct Pool {
     pub address: String,
     pub reserve0: BigUint,
     pub reserve1: BigUint,
-    pub fee: BigUint, // Fee in basis points - unused since fee is constant
+    pub fee: BigUint, // unused since fee is constant
     pub reserves_updated: bool,
     pub block_number: u64,
 }
@@ -27,4 +27,12 @@ pub struct Pool {
 #[derive(Clone, Debug)]
 pub struct TradePath {
     pub tokens: Vec<String>, // ["A", "B", "C"] for path A->B->C
+}
+
+// Holds state for an optimizer
+#[derive(Clone)]
+pub struct Optimizer {
+    pub paths: Vec<TradePath>,
+    pub pools: PoolMap,
+    pub total_amount: BigUint,
 }

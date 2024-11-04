@@ -29,6 +29,22 @@ pub fn validate_request(config: &DexConfig, request: &QuoteRequest) -> Result<()
     if request.buyAmount.is_none() && request.sellAmount.is_none() {
         return Err(anyhow!("Sell Amount is mandatory"));
     }
+
+    let num;
+    if request.sellAmount.is_some() {
+        num = request.sellAmount.clone().unwrap().parse::<u128>().map_err(
+            |_| anyhow!("Invalid amount")
+        )?;
+        
+    }
+    else {
+        num  = request.buyAmount.clone().unwrap().parse::<u128>().map_err(
+            |_| anyhow!("Invalid amount")
+        )?;
+    }
+    if num == 0 {
+        return Err(anyhow!("Amount cannot be 0"));
+    }
     Ok(())
 }
 

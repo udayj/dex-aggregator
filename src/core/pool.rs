@@ -175,6 +175,7 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
 }
 
 impl Pool {
+    // Function to calculate amount out for amount_in number of tokens being sold
     pub fn get_amount_out(
         &self,
         amount_in: &BigUint,
@@ -195,9 +196,11 @@ impl Pool {
         if denominator.is_zero() {
             return BigUint::ZERO;
         }
+        // Follows the formula - delY = [Y*(1-fee)*delX]/[X + (1-fee)*delX]
         numerator / denominator
     }
 
+    // Function to calculate amount in for amount_out no. of tokens being bought
     pub fn get_amount_in(
         &self,
         amount_out: &BigUint,
@@ -205,6 +208,7 @@ impl Pool {
         reserve1: &BigUint,
     ) -> Option<BigUint> {
         // Constants for fee calculation
+        // Returning an Option since depending on the amount_out the tx might not be feasible
         let fee_numerator = BigUint::from_str("3").unwrap(); // 0.3%
         let fee_denominator = BigUint::from_str("1000").unwrap(); // Base for percentage
 
@@ -214,6 +218,7 @@ impl Pool {
         let numerator = amount_out * reserve0 * &fee_denominator;
         let denominator = (reserve1 - amount_out) * (&fee_denominator - &fee_numerator);
 
+        // Follows the formula delX = [X*delY]/[(Y-delY)*(1-fee)]
         // Calculate final amount in and round up
         Some((&numerator + &denominator - BigUint::from(1u32)) / denominator)
     }

@@ -1,5 +1,5 @@
 use super::constants::{INFINITE, SCALE};
-use super::types::{Pool, PoolMap, TradePath};
+use super::types::{Pool, PoolMap, TradePath, Optimizer};
 use num_bigint::BigUint;
 use num_traits::Zero;
 
@@ -31,13 +31,6 @@ pub fn optimize_amount_in(
     let (splits, total_input) = optimizer.optimize_input();
 
     (splits, total_input)
-}
-
-#[derive(Clone)]
-struct Optimizer {
-    paths: Vec<TradePath>,
-    pools: PoolMap,
-    total_amount: BigUint,
 }
 
 impl Optimizer {
@@ -130,7 +123,7 @@ impl Optimizer {
         1.0 / Pool::to_f64(&(total_input * BigUint::from(SCALE as u64)))
     }
 
-    // Project onto simplex
+    // Project onto simplex to preserve the constraint that the splis must be >=0 and <=1 and sum to 1
     fn project_onto_simplex(&self, mut splits: Vec<f64>) -> Vec<f64> {
         // First ensure non-negativity
         for split in splits.iter_mut() {
@@ -311,6 +304,7 @@ impl Optimizer {
     fn optimize_input(&self) -> (Vec<BigUint>, BigUint) {
         let n_paths = self.paths.len();
 
+        // We start with the split in proportion to total liquidity along each path
         let max_output = self.calculate_max_output();
         let normalizer: f64 = max_output.iter().sum();
         let mut splits: Vec<f64> = max_output.iter().map(|v| v / normalizer).collect();
