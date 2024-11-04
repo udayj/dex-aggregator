@@ -9,10 +9,11 @@ pub struct QuoteRequest {
 
     #[schema(example = "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")]
     pub buyTokenAddress: String,
-
-    #[schema(example = "1000000")]
+    // We use decimal formats for amounts for easier debuggability for now - should ultimately be hex
+    #[schema(example = "10000000000")]
     pub sellAmount: Option<String>,
 
+    // We use decimal formats for amounts for easier debuggability for now - should ultimately be hex
     #[schema(example = "2106900000")]
     pub buyAmount: Option<String>,
 

@@ -98,8 +98,9 @@ pub async fn get_latest_pool_data<P: AsRef<Path>>(
         .collect();
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(rpc_url).unwrap()));
 
-    // Get latest accepted block number
-    let block_number = provider.block_number().await?;
+    // Get latest accepted block number - we get a bit conservative and use the next to most recent block number
+    // A more battle tested code would have infra to retry if recent Blocks are not found at the RPC
+    let block_number = provider.block_number().await? - 1;
 
     // Initialize thread safe pool map from the empty pools created previously
     let arc_pool_map: Arc<Mutex<PoolMap>> = Arc::new(Mutex::new(pool_map.clone()));
