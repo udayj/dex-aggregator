@@ -1,22 +1,76 @@
 {
   "pools": [
     {
-      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "token1": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
+      "token1": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
       "pool": {
-        "address": "0x2ed66297d146ecd91595c3174da61c1397e8b7fcecf25d423b1ba6717b0ece9",
+        "address": "0xba8657a8f84d643519731ebd0f1232904d760511c5f23d1e2872e5b62737f",
         "reserve0": [
-          914792783,
-          3496364158,
-          3125
+          599049398,
+          353151
         ],
         "reserve1": [
-          4233424556,
-          2207210295
+          1038213227,
+          2334880192
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
+      "token1": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+      "pool": {
+        "address": "0x74855288dbb974584593acf7bd738572cce3d8f90a7076722d0a624a97d2620",
+        "reserve0": [
+          1563210164,
+          14814307
+        ],
+        "reserve1": [
+          278580731
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+      "pool": {
+        "address": "0x45e7131d776dddc137e30bdd490b431c7144677e97bf9369f629ed8d3fb7dd6",
+        "reserve0": [
+          4168020457,
+          405446159,
+          1
+        ],
+        "reserve1": [
+          1297884755,
+          17
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      "token1": "0x5574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad",
+      "pool": {
+        "address": "0x2732cb3acc597e77bf2e50f89434172b3ab827be26e4e120fd73d46d549bb5f",
+        "reserve0": [
+          2824289200,
+          1713429
+        ],
+        "reserve1": [
+          857115342,
+          1882293514,
+          1
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
       }
     },
     {
@@ -32,60 +86,7 @@
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
-      "token1": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "pool": {
-        "address": "0xba8657a8f84d643519731ebd0f1232904d760511c5f23d1e2872e5b62737f",
-        "reserve0": [
-          2817314286,
-          349944
-        ],
-        "reserve1": [
-          2968321874,
-          2355007025
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
-      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
-      "pool": {
-        "address": "0x5801bdad32f343035fb242e98d1e9371ae85bc1543962fedea16c59b35bd19b",
-        "reserve0": [
-          2453331537,
-          10
-        ],
-        "reserve1": [
-          2544257502,
-          10
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
-      "token1": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
-      "pool": {
-        "address": "0x74855288dbb974584593acf7bd738572cce3d8f90a7076722d0a624a97d2620",
-        "reserve0": [
-          3212520339,
-          15481202
-        ],
-        "reserve1": [
-          266499514
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
       }
     },
     {
@@ -101,61 +102,7 @@
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
-      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
-      "pool": {
-        "address": "0x33863afb8968fc40bc588a7c839faea1d47bb43d034b8ba19f0b8acb7191522",
-        "reserve0": [
-          3962003441,
-          6295757
-        ],
-        "reserve1": [
-          105316576
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
-      "token1": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-      "pool": {
-        "address": "0x70cda8400d7b1ee9e21f7194d320b9ad9c7a2b27e0d15a5a9967b9fefe10c76",
-        "reserve0": [
-          658406530,
-          1119952393
-        ],
-        "reserve1": [
-          2698665245,
-          1324148604
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
-      "pool": {
-        "address": "0x45e7131d776dddc137e30bdd490b431c7144677e97bf9369f629ed8d3fb7dd6",
-        "reserve0": [
-          1855026570,
-          698186073,
-          1
-        ],
-        "reserve1": [
-          1797752601,
-          16
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
       }
     },
     {
@@ -164,54 +111,35 @@
       "pool": {
         "address": "0x4d0390b777b424e43839cd1e744799f3de6c176c7e32c1812a41dbd9c19db6a",
         "reserve0": [
-          516698655,
-          3589979426,
+          3479771563,
+          1983266663,
           5
         ],
         "reserve1": [
-          1962714638,
-          82
+          1213051859,
+          86
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
       }
     },
     {
-      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "token0": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
       "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
       "pool": {
-        "address": "0x19861bfd8e79d75ec46d9413f00bcd6cbee54bda2da60c80934c911c6cb5a0b",
+        "address": "0x5801bdad32f343035fb242e98d1e9371ae85bc1543962fedea16c59b35bd19b",
         "reserve0": [
-          2059643523,
-          2531832027,
-          26
+          1496731613,
+          10
         ],
         "reserve1": [
-          278754010
+          1482688145,
+          10
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
-      }
-    },
-    {
-      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
-      "token1": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
-      "pool": {
-        "address": "0x5726725e9507c3586cc0516449e2c74d9b201ab2747752bb0251aaa263c9a26",
-        "reserve0": [
-          2718851813,
-          745472684,
-          1256
-        ],
-        "reserve1": [
-          3917812207,
-          2
-        ],
-        "fee": [],
-        "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
       }
     },
     {
@@ -228,26 +156,98 @@
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
       }
     },
     {
-      "token0": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-      "token1": "0x5574eb6b8789a91466f902c380d978e472db68170ff82a5b650b95a58ddf4ad",
+      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
+      "token1": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
       "pool": {
-        "address": "0x2732cb3acc597e77bf2e50f89434172b3ab827be26e4e120fd73d46d549bb5f",
+        "address": "0x70cda8400d7b1ee9e21f7194d320b9ad9c7a2b27e0d15a5a9967b9fefe10c76",
         "reserve0": [
-          3517366649,
-          1759225
+          1331253205,
+          1116361677
         ],
         "reserve1": [
-          2186472862,
-          1720227604,
-          1
+          449336467,
+          1322773441
         ],
         "fee": [],
         "reserves_updated": true,
-        "block_number": 932040
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x42b8f0484674ca266ac5d08e4ac6a3fe65bd3129795def2dca5c34ecc5f96d2",
+      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+      "pool": {
+        "address": "0x33863afb8968fc40bc588a7c839faea1d47bb43d034b8ba19f0b8acb7191522",
+        "reserve0": [
+          2152061413,
+          6056249
+        ],
+        "reserve1": [
+          109494259
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "token1": "0x53c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+      "pool": {
+        "address": "0x5726725e9507c3586cc0516449e2c74d9b201ab2747752bb0251aaa263c9a26",
+        "reserve0": [
+          2840327635,
+          2237829958,
+          914
+        ],
+        "reserve1": [
+          2291408428,
+          2
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "token1": "0x68f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+      "pool": {
+        "address": "0x19861bfd8e79d75ec46d9413f00bcd6cbee54bda2da60c80934c911c6cb5a0b",
+        "reserve0": [
+          1682975298,
+          3940708493,
+          24
+        ],
+        "reserve1": [
+          297838495
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
+      }
+    },
+    {
+      "token0": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+      "token1": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      "pool": {
+        "address": "0x2ed66297d146ecd91595c3174da61c1397e8b7fcecf25d423b1ba6717b0ece9",
+        "reserve0": [
+          3155532969,
+          1678049524,
+          2888
+        ],
+        "reserve1": [
+          2719875065,
+          2175057567
+        ],
+        "fee": [],
+        "reserves_updated": true,
+        "block_number": 943094
       }
     }
   ]
